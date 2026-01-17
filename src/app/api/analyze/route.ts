@@ -2,6 +2,15 @@ import { NextResponse } from "next/server";
 
 const OPENAI_ENDPOINT = "https://api.openai.com/v1/chat/completions";
 const MODEL = "gpt-4o-mini";
+const ALLOWED_CATEGORIES = [
+  "Business",
+  "Health",
+  "Mindset",
+  "Politics",
+  "Religion",
+  "Productivity",
+  "Other",
+];
 
 export async function POST(request: Request) {
   const apiKey = process.env.OPENAI_API_KEY;
@@ -24,8 +33,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Missing transcript text." }, { status: 400 });
   }
 
-  const prompt = `You are a concise assistant. 
-Return JSON with keys: analysis (exactly 3 sentences) and actionPlan (array of exactly 3 steps).
+  const prompt = `You are a concise assistant.
+Return JSON with keys: analysis (exactly 3 sentences), actionPlan (array of exactly 3 steps), and category.
+Choose category from this exact list only: ${ALLOWED_CATEGORIES.join(", ")}.
+If unsure or mixed topic, set category to "Other".
 Focus on turning the transcript into actionable guidance.
 Transcript:
 ${text}`;
@@ -59,7 +70,7 @@ ${text}`;
       choices?: Array<{ message?: { content?: string } }>;
     };
     const content = data.choices?.[0]?.message?.content ?? "";
-    let parsed: { analysis?: string; actionPlan?: string[] } | null = null;
+    let parsed: { analysis?: string; actionPlan?: string[]; category?: string } | null = null;
     try {
       parsed = JSON.parse(content);
     } catch {
@@ -76,9 +87,16 @@ ${text}`;
       );
     }
 
+    const normalizedCategory =
+      parsed.category &&
+      ALLOWED_CATEGORIES.find(
+        (value) => value.toLowerCase() === parsed.category?.toLowerCase()
+      );
+
     return NextResponse.json({
       analysis: parsed.analysis,
       actionPlan: parsed.actionPlan.slice(0, 3),
+      category: normalizedCategory ?? "Other",
     });
   } catch (error) {
     return NextResponse.json(

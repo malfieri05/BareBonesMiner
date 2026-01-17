@@ -19,6 +19,28 @@ under Environment Variables so builds can access them.
 Run this SQL in your Supabase project to store mined clips per user:
 
 ```sql
+create table if not exists public.folders (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) on delete cascade,
+  name text not null,
+  is_system boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+alter table public.folders enable row level security;
+
+create policy "Users can read their folders"
+on public.folders for select
+using (auth.uid() = user_id);
+
+create policy "Users can create their folders"
+on public.folders for insert
+with check (auth.uid() = user_id);
+
+create policy "Users can update their folders"
+on public.folders for update
+using (auth.uid() = user_id);
+
 create table if not exists public.mined_clips (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users(id) on delete cascade,
@@ -27,6 +49,8 @@ create table if not exists public.mined_clips (
   transcript text not null,
   analysis text not null,
   action_plan jsonb not null,
+  category text not null default 'Other',
+  folder_id uuid references public.folders(id) on delete set null,
   created_at timestamptz not null default now()
 );
 
@@ -39,6 +63,10 @@ using (auth.uid() = user_id);
 create policy "Users can create their clips"
 on public.mined_clips for insert
 with check (auth.uid() = user_id);
+
+create policy "Users can update their clips"
+on public.mined_clips for update
+using (auth.uid() = user_id);
 ```
 
 First, run the development server:

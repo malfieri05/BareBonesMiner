@@ -22,6 +22,7 @@ type TranscriptResponse = {
 type AnalysisResponse = {
   analysis: string;
   actionPlan: string[];
+  category?: string;
 };
 
 type MinedClip = {
@@ -31,7 +32,15 @@ type MinedClip = {
   transcriptText: string;
   analysis: string;
   actionPlan: string[];
+  category: string;
+  folderId: string | null;
   createdAt: string;
+};
+
+type Folder = {
+  id: string;
+  name: string;
+  isSystem: boolean;
 };
 
 const exampleUrl = "https://www.youtube.com/shorts/aqz-KE-bpKQ";
@@ -54,12 +63,27 @@ export default function AppPage() {
   const [clipsError, setClipsError] = useState<string | null>(null);
   const [selectedClip, setSelectedClip] = useState<MinedClip | null>(null);
   const [highlightClipId, setHighlightClipId] = useState<string | null>(null);
+  const [folders, setFolders] = useState<Folder[]>([]);
+  const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
+  const [newFolderName, setNewFolderName] = useState("");
+  const [savingFolder, setSavingFolder] = useState(false);
+  const [showFolderMenu, setShowFolderMenu] = useState(false);
+  const [cardMenuClipId, setCardMenuClipId] = useState<string | null>(null);
 
   const transcriptText = useMemo(() => {
     if (!response) return "";
     if (typeof response.transcript === "string") return response.transcript;
     return response.transcript.map((segment) => segment.text).join(" ");
   }, [response]);
+
+  const folderCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    minedClips.forEach((clip) => {
+      if (!clip.folderId) return;
+      counts.set(clip.folderId, (counts.get(clip.folderId) ?? 0) + 1);
+    });
+    return counts;
+  }, [minedClips]);
 
   useEffect(() => {
     const loadSession = async () => {
@@ -76,6 +100,8 @@ export default function AppPage() {
       setUserEmail(data.session.user.email ?? null);
       setUserId(data.session.user.id);
       setCheckingSession(false);
+      await ensureDefaultFolders(data.session.user.id);
+      await fetchFolders(data.session.user.id);
       await fetchClips(data.session.user.id);
     };
 
@@ -101,6 +127,8 @@ export default function AppPage() {
         }
         const newClipId = crypto.randomUUID();
         setAnalysis(payload);
+        const category = payload.category?.trim() || "Other";
+        const folderId = await resolveFolderId(category);
         const savedClip = await saveClip({
           id: newClipId,
           videoId: response.videoId,
@@ -108,6 +136,8 @@ export default function AppPage() {
           transcriptText,
           analysis: payload.analysis,
           actionPlan: payload.actionPlan,
+          category,
+          folderId,
           createdAt: new Date().toISOString(),
         });
         if (savedClip) {
@@ -185,7 +215,9 @@ export default function AppPage() {
     setClipsError(null);
     const { data, error } = await supabase
       .from("mined_clips")
-      .select("id, video_id, title, transcript, analysis, action_plan, created_at")
+      .select(
+        "id, video_id, title, transcript, analysis, action_plan, created_at, category, folder_id"
+      )
       .eq("user_id", uid)
       .order("created_at", { ascending: false });
 
@@ -203,6 +235,8 @@ export default function AppPage() {
         transcriptText: clip.transcript as string,
         analysis: clip.analysis as string,
         actionPlan: (clip.action_plan as string[]) ?? [],
+        category: (clip.category as string) ?? "Other",
+        folderId: (clip.folder_id as string) ?? null,
         createdAt: clip.created_at as string,
       })) ?? [];
 
@@ -221,8 +255,12 @@ export default function AppPage() {
         transcript: clip.transcriptText,
         analysis: clip.analysis,
         action_plan: clip.actionPlan,
+        category: clip.category,
+        folder_id: clip.folderId,
       })
-      .select("id, video_id, title, transcript, analysis, action_plan, created_at")
+      .select(
+        "id, video_id, title, transcript, analysis, action_plan, created_at, category, folder_id"
+      )
       .single();
 
     if (error) {
@@ -237,11 +275,140 @@ export default function AppPage() {
       transcriptText: data.transcript as string,
       analysis: data.analysis as string,
       actionPlan: (data.action_plan as string[]) ?? [],
+      category: (data.category as string) ?? "Other",
+      folderId: (data.folder_id as string) ?? null,
       createdAt: data.created_at as string,
     };
   };
 
-  const closeModal = () => setSelectedClip(null);
+  const fetchFolders = async (uid: string) => {
+    if (!supabase) return;
+    const { data, error } = await supabase
+      .from("folders")
+      .select("id, name, is_system")
+      .eq("user_id", uid)
+      .order("name");
+    if (error) {
+      setClipsError(error.message);
+      return;
+    }
+    const seen = new Map<string, Folder>();
+    (data ?? []).forEach((folder) => {
+      const name = (folder.name as string).trim();
+      const key = name.toLowerCase();
+      if (!seen.has(key)) {
+        seen.set(key, {
+          id: folder.id as string,
+          name,
+          isSystem: Boolean(folder.is_system),
+        });
+      }
+    });
+    const sorted = Array.from(seen.values()).sort((a, b) => {
+      const aIsOther = a.name.toLowerCase() === "other";
+      const bIsOther = b.name.toLowerCase() === "other";
+      if (aIsOther && !bIsOther) return 1;
+      if (!aIsOther && bIsOther) return -1;
+      return a.name.localeCompare(b.name);
+    });
+    setFolders(sorted);
+  };
+
+  const ensureDefaultFolders = async (uid: string) => {
+    if (!supabase) return;
+    const { data } = await supabase.from("folders").select("id").eq("user_id", uid).limit(1);
+    if (data && data.length > 0) return;
+    const defaults = [
+      "Business",
+      "Health",
+      "Mindset",
+      "Politics",
+      "Religion",
+      "Productivity",
+      "Other",
+    ];
+    await supabase.from("folders").insert(
+      defaults.map((name) => ({
+        user_id: uid,
+        name,
+        is_system: true,
+      }))
+    );
+  };
+
+  const resolveFolderId = async (category: string) => {
+    if (!supabase || !userId) return null;
+    const match = folders.find(
+      (folder) => folder.name.toLowerCase() === category.toLowerCase()
+    );
+    if (match) return match.id;
+    const { data, error } = await supabase
+      .from("folders")
+      .insert({ user_id: userId, name: category, is_system: true })
+      .select("id")
+      .single();
+    if (error) return null;
+    const created = { id: data.id as string, name: category, isSystem: true };
+    setFolders((prev) => [...prev, created]);
+    return created.id;
+  };
+
+  const handleCreateFolder = async () => {
+    if (!supabase || !userId || !newFolderName.trim()) return;
+    setSavingFolder(true);
+    const { data, error } = await supabase
+      .from("folders")
+      .insert({ user_id: userId, name: newFolderName.trim(), is_system: false })
+      .select("id, name, is_system")
+      .single();
+    setSavingFolder(false);
+    if (error) {
+      setClipsError(error.message);
+      return;
+    }
+    const created = {
+      id: data.id as string,
+      name: data.name as string,
+      isSystem: Boolean(data.is_system),
+    };
+    setFolders((prev) => [...prev, created]);
+    setNewFolderName("");
+  };
+
+  const handleMoveClip = async (
+    clipId: string,
+    folderId: string | null,
+    folderName?: string
+  ) => {
+    if (!supabase) return;
+    const { error } = await supabase
+      .from("mined_clips")
+      .update({ folder_id: folderId, category: folderName ?? "Other" })
+      .eq("id", clipId);
+    if (error) {
+      setClipsError(error.message);
+      return;
+    }
+    setMinedClips((prev) =>
+      prev.map((clip) =>
+        clip.id === clipId
+          ? { ...clip, folderId, category: folderName ?? clip.category }
+          : clip
+      )
+    );
+    setSelectedClip((current) =>
+      current && current.id === clipId
+        ? { ...current, folderId, category: folderName ?? current.category }
+        : current
+    );
+    setShowFolderMenu(false);
+    setCardMenuClipId(null);
+  };
+
+  const closeModal = () => {
+    setSelectedClip(null);
+    setShowFolderMenu(false);
+  };
 
   if (checkingSession) {
     return (
@@ -285,8 +452,19 @@ export default function AppPage() {
               autoComplete="off"
               className={styles.input}
             />
-            <button className={styles.primaryButton} type="submit" disabled={loading}>
-              {loading ? "Mining..." : "Mine"}
+            <button
+              className={styles.primaryButton}
+              type="submit"
+              disabled={loading || analysisLoading}
+            >
+              {loading || analysisLoading ? (
+                <span className={styles.loadingWrap}>
+                  <span className={styles.spinner} aria-hidden="true" />
+                  Mining...
+                </span>
+              ) : (
+                "Mine"
+              )}
             </button>
           </div>
           {error ? <p className={styles.error}>{error}</p> : null}
@@ -299,6 +477,42 @@ export default function AppPage() {
             <h2>Your mined clips</h2>
             <p>Newest clips appear first.</p>
           </div>
+          <div className={styles.folderControls}>
+            <div className={styles.folderList}>
+              <button
+                type="button"
+                className={`${styles.folderChip} ${
+                  activeFolderId === null ? styles.folderChipActive : ""
+                } ${styles.allChip}`}
+                onClick={() => setActiveFolderId(null)}
+              >
+                All ({minedClips.length})
+              </button>
+              {folders.map((folder) => (
+                <button
+                  key={folder.id}
+                  type="button"
+                  className={`${styles.folderChip} ${
+                    activeFolderId === folder.id ? styles.folderChipActive : ""
+                  } ${folder.name.toLowerCase() === "other" ? styles.otherChip : ""}`}
+                  onClick={() => setActiveFolderId(folder.id)}
+                >
+                  {folder.name} ({folderCounts.get(folder.id) ?? 0})
+                </button>
+              ))}
+            </div>
+            <div className={styles.createFolder}>
+              <input
+                type="text"
+                placeholder="New folder name"
+                value={newFolderName}
+                onChange={(event) => setNewFolderName(event.target.value)}
+              />
+              <button type="button" onClick={handleCreateFolder} disabled={savingFolder}>
+                {savingFolder ? "Adding..." : "Add folder"}
+              </button>
+            </div>
+          </div>
           {clipsLoading ? (
             <div className={styles.emptyState}>Loading your saved clips...</div>
           ) : clipsError ? (
@@ -309,7 +523,9 @@ export default function AppPage() {
             </div>
           ) : (
             <div className={styles.grid}>
-              {minedClips.map((clip, index) => (
+              {minedClips
+                .filter((clip) => (activeFolderId ? clip.folderId === activeFolderId : true))
+                .map((clip, index) => (
                 <article
                   key={clip.id}
                   className={`${styles.clipCard} ${
@@ -318,14 +534,53 @@ export default function AppPage() {
                 >
                   <div className={styles.cardTop}>
                     <div className={styles.tag}>Clip #{minedClips.length - index}</div>
-                    <span className={styles.status}>Complete</span>
+                    <button
+                      type="button"
+                      className={styles.cardMenuButton}
+                      aria-label="Move to folder"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setCardMenuClipId((current) =>
+                          current === clip.id ? null : clip.id
+                        );
+                      }}
+                    >
+                      ⋯
+                    </button>
+                    {cardMenuClipId === clip.id ? (
+                      <div
+                        className={styles.cardMenu}
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        <p className={styles.menuLabel}>Move to folder</p>
+                        <select
+                          className={styles.folderSelect}
+                          value={clip.folderId ?? ""}
+                          onChange={(event) =>
+                            handleMoveClip(
+                              clip.id,
+                              event.target.value ? event.target.value : null,
+                              folders.find((folder) => folder.id === event.target.value)
+                                ?.name ?? "Other"
+                            )
+                          }
+                        >
+                          <option value="">Uncategorized</option>
+                          {folders.map((folder) => (
+                            <option key={folder.id} value={folder.id}>
+                              {folder.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    ) : null}
                   </div>
                   <button
                     className={styles.cardButton}
                     type="button"
                     onClick={() => setSelectedClip(clip)}
                   >
-                    <p className={styles.clipTitle}>{clip.title}</p>
+                    <p className={styles.clipTitle}>{clip.category}</p>
                     <h3>{clip.analysis}</h3>
                     <p className={styles.actionTitle}>Step 1</p>
                     <p className={styles.actionText}>{clip.actionPlan[0]}</p>
@@ -343,7 +598,12 @@ export default function AppPage() {
           <div className={styles.modalOverlay} onClick={closeModal} role="presentation">
             <div
               className={styles.modal}
-              onClick={(event) => event.stopPropagation()}
+              onClick={(event) => {
+                event.stopPropagation();
+                if (showFolderMenu) {
+                  setShowFolderMenu(false);
+                }
+              }}
               role="dialog"
               aria-modal="true"
             >
@@ -351,12 +611,58 @@ export default function AppPage() {
                 <div>
                   <p className={styles.modalTitle}>{selectedClip.title}</p>
                   <p className={styles.modalMeta}>
-                    Video ID: {selectedClip.videoId} · {formatDate(selectedClip.createdAt)}
+                    Video Link:{" "}
+                    <a
+                      className={styles.videoLink}
+                      href={`https://www.youtube.com/watch?v=${selectedClip.videoId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Open
+                    </a>{" "}
+                    · {formatDate(selectedClip.createdAt)}
                   </p>
                 </div>
-                <button className={styles.modalClose} onClick={closeModal} type="button">
-                  Close
-                </button>
+                <div className={styles.modalActions}>
+                  <button
+                    className={styles.menuButton}
+                    type="button"
+                    aria-label="Move to folder"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setShowFolderMenu((current) => !current);
+                    }}
+                  >
+                    ⋯
+                  </button>
+                  {showFolderMenu ? (
+                    <div className={styles.menu} onClick={(event) => event.stopPropagation()}>
+                      <p className={styles.menuLabel}>Move to folder</p>
+                      <select
+                        className={styles.folderSelect}
+                        value={selectedClip.folderId ?? ""}
+                        onChange={(event) =>
+                          handleMoveClip(
+                            selectedClip.id,
+                            event.target.value ? event.target.value : null,
+                            folders.find((folder) => folder.id === event.target.value)
+                              ?.name ?? "Other"
+                          )
+                        }
+                      >
+                        <option value="">Uncategorized</option>
+                        {folders.map((folder) => (
+                          <option key={folder.id} value={folder.id}>
+                            {folder.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  ) : null}
+                  <button className={styles.modalClose} onClick={closeModal} type="button">
+                    Close
+                  </button>
+                </div>
               </div>
               <div className={styles.modalSection}>
                 <p className={styles.detailLabel}>Analysis</p>
