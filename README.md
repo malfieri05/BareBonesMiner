@@ -7,6 +7,35 @@ Create a `.env.local` file with your SearchAPI key:
 ```bash
 SEARCHAPI_KEY=your_searchapi_key
 OPENAI_API_KEY=your_openai_key
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+## Supabase setup (for saved clips)
+
+Run this SQL in your Supabase project to store mined clips per user:
+
+```sql
+create table if not exists public.mined_clips (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) on delete cascade,
+  video_id text not null,
+  title text not null,
+  transcript text not null,
+  analysis text not null,
+  action_plan jsonb not null,
+  created_at timestamptz not null default now()
+);
+
+alter table public.mined_clips enable row level security;
+
+create policy "Users can read their clips"
+on public.mined_clips for select
+using (auth.uid() = user_id);
+
+create policy "Users can create their clips"
+on public.mined_clips for insert
+with check (auth.uid() = user_id);
 ```
 
 First, run the development server:
