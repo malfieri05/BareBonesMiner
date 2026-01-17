@@ -423,11 +423,11 @@ export default function AppPage() {
       <main className={styles.main}>
         <header className={styles.header}>
           <div>
-            <p className={styles.eyebrow}>Value Miner</p>
-            <h1>Your transcript workspace</h1>
-            <p className={styles.subhead}>
-              Paste a Shorts URL to generate a transcript, summary, and action plan.
+            <h1 className={styles.title}>Value Miner</h1>
+            <p className={styles.welcome}>
+              {userEmail ? `Welcome, ${userEmail}` : "Welcome"}
             </p>
+            <p className={styles.subhead}>Turn your doom scroll into actionable insights.</p>
           </div>
           <div className={styles.userInfo}>
             {userEmail ? <span>{userEmail}</span> : null}
@@ -439,7 +439,7 @@ export default function AppPage() {
 
         <form className={styles.form} onSubmit={handleSubmit}>
           <label className={styles.label} htmlFor="url">
-            YouTube URL
+            Input YouTube short URL
           </label>
           <div className={styles.inputRow}>
             <input
@@ -509,7 +509,7 @@ export default function AppPage() {
                 onChange={(event) => setNewFolderName(event.target.value)}
               />
               <button type="button" onClick={handleCreateFolder} disabled={savingFolder}>
-                {savingFolder ? "Adding..." : "Add folder"}
+                {savingFolder ? "Adding..." : "Add Category"}
               </button>
             </div>
           </div>
@@ -545,14 +545,20 @@ export default function AppPage() {
                         );
                       }}
                     >
-                      ⋯
+                      <span
+                        className={`${styles.menuIcon} ${
+                          cardMenuClipId === clip.id ? styles.menuIconActive : ""
+                        }`}
+                      >
+                        {cardMenuClipId === clip.id ? "×" : "⋯"}
+                      </span>
                     </button>
                     {cardMenuClipId === clip.id ? (
                       <div
                         className={styles.cardMenu}
                         onClick={(event) => event.stopPropagation()}
                       >
-                        <p className={styles.menuLabel}>Move to folder</p>
+                        <p className={styles.menuLabel}>Assign Category</p>
                         <select
                           className={styles.folderSelect}
                           value={clip.folderId ?? ""}
@@ -627,13 +633,19 @@ export default function AppPage() {
                   <button
                     className={styles.menuButton}
                     type="button"
-                    aria-label="Move to folder"
+                    aria-label="Assign category"
                     onClick={(event) => {
                       event.stopPropagation();
                       setShowFolderMenu((current) => !current);
                     }}
                   >
-                    ⋯
+                    <span
+                      className={`${styles.menuIcon} ${
+                        showFolderMenu ? styles.menuIconActive : ""
+                      }`}
+                    >
+                      {showFolderMenu ? "×" : "⋯"}
+                    </span>
                   </button>
                   {showFolderMenu ? (
                     <div className={styles.menu} onClick={(event) => event.stopPropagation()}>
