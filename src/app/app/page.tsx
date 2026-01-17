@@ -63,6 +63,11 @@ export default function AppPage() {
 
   useEffect(() => {
     const loadSession = async () => {
+      if (!supabase) {
+        setClipsError("Supabase is not configured. Check your environment variables.");
+        setCheckingSession(false);
+        return;
+      }
       const { data } = await supabase.auth.getSession();
       if (!data.session) {
         router.replace("/auth?mode=signin");
@@ -159,6 +164,7 @@ export default function AppPage() {
   };
 
   const handleSignOut = async () => {
+    if (!supabase) return;
     await supabase.auth.signOut();
     router.replace("/");
   };
@@ -171,6 +177,10 @@ export default function AppPage() {
     });
 
   const fetchClips = async (uid: string) => {
+    if (!supabase) {
+      setClipsError("Supabase is not configured. Check your environment variables.");
+      return;
+    }
     setClipsLoading(true);
     setClipsError(null);
     const { data, error } = await supabase
@@ -201,7 +211,7 @@ export default function AppPage() {
   };
 
   const saveClip = async (clip: MinedClip) => {
-    if (!userId) return null;
+    if (!supabase || !userId) return null;
     const { data, error } = await supabase
       .from("mined_clips")
       .insert({

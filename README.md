@@ -11,6 +11,9 @@ NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
+For Vercel deployments, add the same variables in the Vercel project settings
+under Environment Variables so builds can access them.
+
 ## Supabase setup (for saved clips)
 
 Run this SQL in your Supabase project to store mined clips per user:

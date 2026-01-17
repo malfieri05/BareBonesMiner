@@ -29,6 +29,10 @@ export default function AuthPage() {
     setLoading(true);
 
     try {
+      if (!supabase) {
+        setStatus("Supabase is not configured. Check your environment variables.");
+        return;
+      }
       if (!email || !password) {
         setStatus("Please enter an email and password.");
         return;
