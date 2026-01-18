@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 import styles from "./auth.module.css";
@@ -14,14 +14,16 @@ type AuthClientProps = {
 
 export default function AuthClient({ mode }: AuthClientProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const activeMode = (searchParams.get("mode") as Mode) || mode;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const title = useMemo(
-    () => (mode === "signup" ? "Create your account" : "Welcome back"),
-    [mode]
+    () => (activeMode === "signup" ? "Create your account" : "Welcome back"),
+    [activeMode]
   );
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -39,7 +41,7 @@ export default function AuthClient({ mode }: AuthClientProps) {
         return;
       }
 
-      if (mode === "signup") {
+      if (activeMode === "signup") {
         const { error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
         setStatus("Check your email to confirm your account.");
@@ -95,13 +97,13 @@ export default function AuthClient({ mode }: AuthClientProps) {
           />
 
           <button className={styles.primary} type="submit" disabled={loading}>
-            {loading ? "Working..." : mode === "signup" ? "Create account" : "Sign in"}
+            {loading ? "Working..." : activeMode === "signup" ? "Create account" : "Sign in"}
           </button>
           {status ? <p className={styles.status}>{status}</p> : null}
         </form>
 
         <div className={styles.switch}>
-          {mode === "signup" ? (
+          {activeMode === "signup" ? (
             <>
               Already have an account? <Link href="/auth?mode=signin">Sign in</Link>
             </>

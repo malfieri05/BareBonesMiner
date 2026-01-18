@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import AuthClient from "./auth-client";
 
+export const dynamic = "force-dynamic";
+
 type PageProps = {
   searchParams?: { mode?: string };
 };
