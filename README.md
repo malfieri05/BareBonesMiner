@@ -9,6 +9,10 @@ SEARCHAPI_KEY=your_searchapi_key
 OPENAI_API_KEY=your_openai_key
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_URL=your_supabase_url
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+RESEND_API_KEY=your_resend_api_key
+REPORT_FROM_EMAIL=reports@yourdomain.com
 ```
 
 For Vercel deployments, add the same variables in the Vercel project settings
@@ -66,6 +70,33 @@ with check (auth.uid() = user_id);
 
 create policy "Users can update their clips"
 on public.mined_clips for update
+using (auth.uid() = user_id);
+
+create table if not exists public.report_preferences (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  frequency text not null,
+  time_of_day text not null,
+  day_of_week text,
+  timezone text not null,
+  last_sent_at timestamptz,
+  updated_at timestamptz not null default now()
+);
+
+alter table public.report_preferences enable row level security;
+
+drop policy if exists "Users can read their report prefs" on public.report_preferences;
+drop policy if exists "Users can upsert their report prefs" on public.report_preferences;
+
+create policy "Users can read their report prefs"
+on public.report_preferences for select
+using (auth.uid() = user_id);
+
+create policy "Users can upsert their report prefs"
+on public.report_preferences for insert
+with check (auth.uid() = user_id);
+
+create policy "Users can update their report prefs"
+on public.report_preferences for update
 using (auth.uid() = user_id);
 ```
 

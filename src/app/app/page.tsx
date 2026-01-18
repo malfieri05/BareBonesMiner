@@ -69,6 +69,13 @@ export default function AppPage() {
   const [savingFolder, setSavingFolder] = useState(false);
   const [showFolderMenu, setShowFolderMenu] = useState(false);
   const [cardMenuClipId, setCardMenuClipId] = useState<string | null>(null);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportFrequency, setReportFrequency] = useState<"daily" | "weekly">("daily");
+  const [reportTime, setReportTime] = useState("08:00");
+  const [reportDay, setReportDay] = useState("Monday");
+  const [reportSaving, setReportSaving] = useState(false);
+  const [reportStatus, setReportStatus] = useState<string | null>(null);
 
   const transcriptText = useMemo(() => {
     if (!response) return "";
@@ -158,6 +165,15 @@ export default function AppPage() {
 
     runAnalysis();
   }, [analysis, analysisLoading, response, transcriptText]);
+
+  useEffect(() => {
+    if (!showProfileMenu) return;
+    const handleClick = () => setShowProfileMenu(false);
+    window.addEventListener("click", handleClick);
+    return () => window.removeEventListener("click", handleClick);
+  }, [showProfileMenu]);
+
+  const closeReportModal = () => setShowReportModal(false);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -405,10 +421,37 @@ export default function AppPage() {
     setCardMenuClipId(null);
   };
 
+  const handleSaveReportPreferences = async () => {
+    if (!supabase || !userId) return;
+    setReportSaving(true);
+    setReportStatus(null);
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const { error } = await supabase.from("report_preferences").upsert({
+      user_id: userId,
+      frequency: reportFrequency,
+      time_of_day: reportTime,
+      day_of_week: reportFrequency === "weekly" ? reportDay : null,
+      timezone,
+      updated_at: new Date().toISOString(),
+    });
+    setReportSaving(false);
+    if (error) {
+      setReportStatus(error.message);
+      return;
+    }
+    setReportStatus("Preferences saved.");
+  };
+
   const closeModal = () => {
     setSelectedClip(null);
     setShowFolderMenu(false);
   };
+
+  useEffect(() => {
+    if (!selectedClip) {
+      setShowProfileMenu(false);
+    }
+  }, [selectedClip]);
 
   if (checkingSession) {
     return (
@@ -431,9 +474,39 @@ export default function AppPage() {
           </div>
           <div className={styles.userInfo}>
             {userEmail ? <span>{userEmail}</span> : null}
-            <button className={styles.signOut} type="button" onClick={handleSignOut}>
-              Sign out
+            <button
+              className={styles.profileButton}
+              type="button"
+              aria-label="User menu"
+              onClick={(event) => {
+                event.stopPropagation();
+                setShowProfileMenu((current) => !current);
+              }}
+            >
+              👤
             </button>
+            <button
+              className={styles.bellButton}
+              type="button"
+              aria-label="Notification settings"
+              onClick={() => setShowReportModal(true)}
+            >
+              🔔
+            </button>
+            {showProfileMenu ? (
+              <div
+                className={styles.profileMenu}
+                onClick={(event) => event.stopPropagation()}
+              >
+                <button
+                  className={styles.signOut}
+                  type="button"
+                  onClick={handleSignOut}
+                >
+                  Sign out
+                </button>
+              </div>
+            ) : null}
           </div>
         </header>
 
@@ -558,7 +631,7 @@ export default function AppPage() {
                         className={styles.cardMenu}
                         onClick={(event) => event.stopPropagation()}
                       >
-                        <p className={styles.menuLabel}>Assign Category</p>
+                        <p className={styles.menuLabel}>Assign Category:</p>
                         <select
                           className={styles.folderSelect}
                           value={clip.folderId ?? ""}
@@ -692,6 +765,97 @@ export default function AppPage() {
                 <p className={styles.detailLabel}>Full transcript</p>
                 <p className={styles.detailText}>{selectedClip.transcriptText}</p>
               </div>
+            </div>
+          </div>
+        ) : null}
+        {showReportModal ? (
+          <div className={styles.modalOverlay} onClick={closeReportModal} role="presentation">
+            <div
+              className={styles.modal}
+              onClick={(event) => event.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+            >
+              <div className={styles.modalHeader}>
+                <div>
+                  <p className={styles.modalTitle}>Your automated scroll report</p>
+                  <p className={styles.modalMeta}>
+                    Receive new automated email report of your mined info per set time
+                    period:
+                  </p>
+                </div>
+                <button className={styles.modalClose} onClick={closeReportModal} type="button">
+                  Close
+                </button>
+              </div>
+              <div className={styles.modalSection}>
+                <div className={styles.reportOptions}>
+                  <label className={styles.radioOption}>
+                    <input
+                      type="radio"
+                      name="reportFrequency"
+                      value="daily"
+                      checked={reportFrequency === "daily"}
+                      onChange={() => setReportFrequency("daily")}
+                    />
+                    Daily
+                  </label>
+                  <label className={styles.radioOption}>
+                    <input
+                      type="radio"
+                      name="reportFrequency"
+                      value="weekly"
+                      checked={reportFrequency === "weekly"}
+                      onChange={() => setReportFrequency("weekly")}
+                    />
+                    Weekly
+                  </label>
+                </div>
+              </div>
+              {reportFrequency === "weekly" ? (
+                <div className={styles.modalSection}>
+                  <label className={styles.detailLabel}>Day of week</label>
+                  <select
+                    className={styles.folderSelect}
+                    value={reportDay}
+                    onChange={(event) => setReportDay(event.target.value)}
+                  >
+                    {[
+                      "Monday",
+                      "Tuesday",
+                      "Wednesday",
+                      "Thursday",
+                      "Friday",
+                      "Saturday",
+                      "Sunday",
+                    ].map((day) => (
+                      <option key={day} value={day}>
+                        {day}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : null}
+              <div className={styles.modalSection}>
+                <label className={styles.detailLabel}>Time</label>
+                <input
+                  className={styles.timeInput}
+                  type="time"
+                  value={reportTime}
+                  onChange={(event) => setReportTime(event.target.value)}
+                />
+              </div>
+              <div className={styles.modalFooter}>
+                <button
+                  className={styles.primaryButton}
+                  type="button"
+                  onClick={handleSaveReportPreferences}
+                  disabled={reportSaving}
+                >
+                  {reportSaving ? "Saving..." : "Save preferences"}
+                </button>
+              </div>
+              {reportStatus ? <p className={styles.reportStatus}>{reportStatus}</p> : null}
             </div>
           </div>
         ) : null}
