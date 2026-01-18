@@ -101,6 +101,17 @@
   place-items: center;
 }
 
+.bellIcon {
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+}
+
+.bellIcon svg {
+  width: 100%;
+  height: 100%;
+}
+
 .profileMenu {
   position: absolute;
   top: 42px;
