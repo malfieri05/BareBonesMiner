@@ -4,82 +4,13 @@ import { supabaseServer } from "@/lib/supabaseServer";
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const FROM_EMAIL = process.env.REPORT_FROM_EMAIL;
 
-type Preference = {
-  user_id: string;
+type Preferences = {
   frequency: "daily" | "weekly";
-  time_of_day: string;
-  day_of_week: string | null;
-  timezone: string;
-  last_sent_at: string | null;
-  users: { email: string | null } | null;
 };
 
-const WEEKDAYS = [
-  "Sunday",
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-];
-
-function getLocalParts(date: Date, timeZone: string) {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone,
-    hour12: false,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    weekday: "long",
-  }).formatToParts(date);
-
-  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
-  return {
-    year: Number(get("year")),
-    month: Number(get("month")),
-    day: Number(get("day")),
-    hour: Number(get("hour")),
-    minute: Number(get("minute")),
-    weekday: get("weekday"),
-  };
-}
-
-function isDue(pref: Preference, now: Date) {
-  const local = getLocalParts(now, pref.timezone);
-  const [hourStr, minStr] = pref.time_of_day.split(":");
-  const targetHour = Number(hourStr);
-  const targetMinute = Number(minStr);
-
-  if (local.hour < targetHour || (local.hour === targetHour && local.minute < targetMinute)) {
-    return false;
-  }
-
-  if (pref.frequency === "weekly") {
-    if (pref.day_of_week && pref.day_of_week !== local.weekday) return false;
-  }
-
-  if (!pref.last_sent_at) return true;
-
-  const last = new Date(pref.last_sent_at);
-  const lastLocal = getLocalParts(last, pref.timezone);
-
-  if (pref.frequency === "daily") {
-    return (
-      local.year !== lastLocal.year ||
-      local.month !== lastLocal.month ||
-      local.day !== lastLocal.day
-    );
-  }
-
-  return local.weekday !== lastLocal.weekday;
-}
-
-function formatPeriodStart(pref: Preference, now: Date) {
-  const offsetHours = pref.frequency === "weekly" ? 24 * 7 : 24;
-  return new Date(now.getTime() - offsetHours * 60 * 60 * 1000).toISOString();
+function formatPeriodStart(frequency: "daily" | "weekly", now: Date) {
+  const hours = frequency === "weekly" ? 24 * 7 : 24;
+  return new Date(now.getTime() - hours * 60 * 60 * 1000).toISOString();
 }
 
 function getBelief(category: string) {
@@ -218,42 +149,45 @@ async function sendEmail(to: string, subject: string, html: string) {
   }
 }
 
-export async function POST() {
-  const now = new Date();
-  const { data: prefs, error } = await supabaseServer
+export async function POST(request: Request) {
+  const authHeader = request.headers.get("authorization") || "";
+  const token = authHeader.replace("Bearer ", "");
+  if (!token) {
+    return NextResponse.json({ error: "Missing auth token." }, { status: 401 });
+  }
+
+  const { data: userData, error: userError } = await supabaseServer.auth.getUser(token);
+  if (userError || !userData.user) {
+    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  }
+
+  const userId = userData.user.id;
+  const email = userData.user.email;
+  if (!email) {
+    return NextResponse.json({ error: "Missing user email." }, { status: 400 });
+  }
+
+  const { data: prefData } = await supabaseServer
     .from("report_preferences")
-    .select("user_id, frequency, time_of_day, day_of_week, timezone, last_sent_at, users(email)")
-    .returns<Preference[]>();
+    .select("frequency")
+    .eq("user_id", userId)
+    .single();
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
+  const preferences = (prefData as Preferences) ?? { frequency: "daily" };
+  const now = new Date();
+  const fromDate = formatPeriodStart(preferences.frequency, now);
 
-  const due = (prefs ?? []).filter((pref) => pref.users?.email && isDue(pref, now));
+  const { data: clips } = await supabaseServer
+    .from("mined_clips")
+    .select("title, analysis, action_plan, category, created_at")
+    .eq("user_id", userId)
+    .gte("created_at", fromDate)
+    .order("created_at", { ascending: false });
 
-  for (const pref of due) {
-    const fromDate = formatPeriodStart(pref, now);
-    const { data: clips } = await supabaseServer
-      .from("mined_clips")
-      .select("title, analysis, action_plan, category, created_at")
-      .eq("user_id", pref.user_id)
-      .gte("created_at", fromDate)
-      .order("created_at", { ascending: false });
+  const periodLabel = preferences.frequency === "weekly" ? "Weekly" : "Daily";
+  const html = buildEmailHtml(email, clips ?? [], periodLabel);
+  await sendEmail(email, `${periodLabel} Value Miner Scroll Report`, html);
 
-    const periodLabel = pref.frequency === "weekly" ? "Weekly" : "Daily";
-    const html = buildEmailHtml(pref.users?.email ?? "", clips ?? [], periodLabel);
-    await sendEmail(
-      pref.users?.email ?? "",
-      `${periodLabel} Value Miner Scroll Report`,
-      html
-    );
-
-    await supabaseServer
-      .from("report_preferences")
-      .update({ last_sent_at: now.toISOString() })
-      .eq("user_id", pref.user_id);
-  }
-
-  return NextResponse.json({ sent: due.length });
+  return NextResponse.json({ sent: true });
 }
 

@@ -76,6 +76,7 @@ export default function AppPage() {
   const [reportDay, setReportDay] = useState("Monday");
   const [reportSaving, setReportSaving] = useState(false);
   const [reportStatus, setReportStatus] = useState<string | null>(null);
+  const [reportSending, setReportSending] = useState(false);
 
   const transcriptText = useMemo(() => {
     if (!response) return "";
@@ -440,6 +441,35 @@ export default function AppPage() {
       return;
     }
     setReportStatus("Preferences saved.");
+  };
+
+  const handleSendReportNow = async () => {
+    if (!supabase) return;
+    setReportSending(true);
+    setReportStatus(null);
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    if (!token) {
+      setReportStatus("You must be signed in to send a report.");
+      setReportSending(false);
+      return;
+    }
+    try {
+      const response = await fetch("/api/report/send", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload?.error || "Failed to send report.");
+      }
+      setReportStatus("Report sent. Check your inbox.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to send report.";
+      setReportStatus(message);
+    } finally {
+      setReportSending(false);
+    }
   };
 
   const closeModal = () => {
@@ -846,6 +876,14 @@ export default function AppPage() {
                 />
               </div>
               <div className={styles.modalFooter}>
+                <button
+                  className={styles.secondaryButton}
+                  type="button"
+                  onClick={handleSendReportNow}
+                  disabled={reportSending}
+                >
+                  {reportSending ? "Sending..." : "Send current report now"}
+                </button>
                 <button
                   className={styles.primaryButton}
                   type="button"
