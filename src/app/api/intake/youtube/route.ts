@@ -21,11 +21,15 @@ export async function POST(request: Request) {
   }
 
   const body = (await request.json()) as { url?: string; source?: string };
+  if (!tokenData?.user_id) {
+    return NextResponse.json({ error: "Invalid token." }, { status: 401 });
+  }
   if (!body?.url) {
     return NextResponse.json({ error: "Missing url." }, { status: 400 });
   }
 
-  const videoId = extractVideoId(body.url);
+  const url = body.url;
+  const videoId = extractVideoId(url);
   if (!videoId) {
     return NextResponse.json({ error: "Invalid YouTube URL." }, { status: 400 });
   }
@@ -48,7 +52,7 @@ export async function POST(request: Request) {
     .from("intake_requests")
     .insert({
       user_id: tokenData.user_id,
-      url: body.url,
+      url,
       video_id: videoId,
       source,
       status: "queued",
@@ -64,7 +68,7 @@ export async function POST(request: Request) {
   setTimeout(() => {
     processIntakeRequest({
       userId: tokenData.user_id,
-      url: body.url,
+      url,
       source,
       intakeId: intake.id as string,
     }).catch(() => null);
