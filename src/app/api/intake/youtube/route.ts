@@ -2,6 +2,17 @@ import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { extractVideoId, hashToken, processIntakeRequest } from "@/lib/intakeProcessor";
 
+function pickUrl(value: unknown): string | null {
+  if (!value) return null;
+  if (typeof value === "string") return value;
+  if (Array.isArray(value)) return pickUrl(value[0]);
+  if (typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    return pickUrl(record.url ?? record.URL ?? record.href ?? record.link);
+  }
+  return null;
+}
+
 export async function POST(request: Request) {
   const authHeader = request.headers.get("authorization") || "";
   const rawToken = authHeader.replace("Bearer ", "");
@@ -20,13 +31,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid token." }, { status: 401 });
   }
 
-  const body = (await request.json().catch(() => null)) as
-    | { url?: string | string[]; source?: string }
-    | null;
+  const rawBody = await request.text();
+  let body: unknown = null;
+  try {
+    body = rawBody ? JSON.parse(rawBody) : null;
+  } catch {
+    body = null;
+  }
   if (!tokenData?.user_id) {
     return NextResponse.json({ error: "Invalid token." }, { status: 401 });
   }
-  const urlValue = Array.isArray(body?.url) ? body?.url?.[0] : body?.url;
+  const urlValue =
+    typeof body === "string"
+      ? body
+      : pickUrl((body as { url?: unknown } | null)?.url ?? body);
   if (!urlValue || typeof urlValue !== "string") {
     return NextResponse.json({ error: "Missing url." }, { status: 400 });
   }
@@ -37,7 +55,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid YouTube URL." }, { status: 400 });
   }
 
-  const source = typeof body?.source === "string" ? body.source : "ios_shortcut";
+  const source =
+    typeof body === "object" && body && "source" in body && typeof body.source === "string"
+      ? body.source
+      : "ios_shortcut";
   const now = new Date().toISOString();
 
   const { data: existingClip } = await supabaseServer
