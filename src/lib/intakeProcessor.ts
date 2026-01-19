@@ -13,12 +13,8 @@ const ALLOWED_CATEGORIES = [
   "Other",
 ];
 
-export function extractVideoId(input: string): string | null {
-  const trimmed = input.trim();
-  if (!trimmed) return null;
-  if (VIDEO_ID_REGEX.test(trimmed)) return trimmed;
-
-  const normalized = trimmed.startsWith("http") ? trimmed : `https://${trimmed}`;
+function extractFromUrlString(raw: string): string | null {
+  const normalized = raw.startsWith("http") ? raw : `https://${raw}`;
 
   try {
     const url = new URL(normalized);
@@ -46,6 +42,24 @@ export function extractVideoId(input: string): string | null {
     }
   } catch {
     return null;
+  }
+
+  return null;
+}
+
+export function extractVideoId(input: string): string | null {
+  const trimmed = input.trim();
+  if (!trimmed) return null;
+  if (VIDEO_ID_REGEX.test(trimmed)) return trimmed;
+
+  const direct = extractFromUrlString(trimmed);
+  if (direct) return direct;
+
+  const urlMatches = trimmed.match(/https?:\/\/\S+/g) ?? [];
+  for (const candidate of urlMatches) {
+    const cleaned = candidate.replace(/[)\].,!?]+$/g, "");
+    const found = extractFromUrlString(cleaned);
+    if (found) return found;
   }
 
   return null;
