@@ -194,13 +194,9 @@ export async function processIntakeRequest(params: {
     analysis = await analyzeTranscript(transcriptText);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    if (message.includes("Transcript not available")) {
-      transcriptError = message;
-      transcriptText = "Transcript not available.";
-      analysis = { analysis: "Transcript not available.", actionPlan: [], category: "Other" };
-    } else {
-      throw new Error(message);
-    }
+    transcriptError = message;
+    transcriptText = "Transcript not available.";
+    analysis = { analysis: "Transcript not available.", actionPlan: [], category: "Other" };
   }
   const folderId = await resolveFolderId(params.userId, analysis.category);
 
