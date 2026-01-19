@@ -20,21 +20,24 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid token." }, { status: 401 });
   }
 
-  const body = (await request.json()) as { url?: string; source?: string };
+  const body = (await request.json().catch(() => null)) as
+    | { url?: string | string[]; source?: string }
+    | null;
   if (!tokenData?.user_id) {
     return NextResponse.json({ error: "Invalid token." }, { status: 401 });
   }
-  if (!body?.url) {
+  const urlValue = Array.isArray(body?.url) ? body?.url?.[0] : body?.url;
+  if (!urlValue || typeof urlValue !== "string") {
     return NextResponse.json({ error: "Missing url." }, { status: 400 });
   }
 
-  const url = body.url;
+  const url = urlValue;
   const videoId = extractVideoId(url);
   if (!videoId) {
     return NextResponse.json({ error: "Invalid YouTube URL." }, { status: 400 });
   }
 
-  const source = body.source || "ios_shortcut";
+  const source = typeof body?.source === "string" ? body.source : "ios_shortcut";
   const now = new Date().toISOString();
 
   const { data: existingClip } = await supabaseServer
