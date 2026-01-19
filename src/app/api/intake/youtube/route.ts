@@ -89,15 +89,22 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: intakeError.message }, { status: 500 });
   }
 
-  setTimeout(() => {
-    processIntakeRequest({
+  try {
+    const result = await processIntakeRequest({
       userId: tokenData.user_id,
       url,
       source,
       intakeId: intake.id as string,
-    }).catch(() => null);
-  }, 0);
+    });
 
-  return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, clipId: result.clipId });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Processing failed.";
+    await supabaseServer
+      .from("intake_requests")
+      .update({ status: "error", error: message, processed_at: new Date().toISOString() })
+      .eq("id", intake.id);
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }
 
