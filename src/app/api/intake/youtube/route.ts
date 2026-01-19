@@ -85,8 +85,9 @@ export async function POST(request: Request) {
     .select("id")
     .single();
 
+  const intakeId = intake?.id as string | undefined;
   if (intakeError) {
-    return NextResponse.json({ error: intakeError.message }, { status: 500 });
+    console.warn("Intake request insert failed:", intakeError.message);
   }
 
   try {
@@ -94,16 +95,18 @@ export async function POST(request: Request) {
       userId: tokenData.user_id,
       url,
       source,
-      intakeId: intake.id as string,
+      intakeId,
     });
 
     return NextResponse.json({ success: true, clipId: result.clipId });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Processing failed.";
-    await supabaseServer
-      .from("intake_requests")
-      .update({ status: "error", error: message, processed_at: new Date().toISOString() })
-      .eq("id", intake.id);
+    if (intakeId) {
+      await supabaseServer
+        .from("intake_requests")
+        .update({ status: "error", error: message, processed_at: new Date().toISOString() })
+        .eq("id", intakeId);
+    }
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
