@@ -55,6 +55,7 @@ create table if not exists public.mined_clips (
   action_plan jsonb not null,
   category text not null default 'Other',
   folder_id uuid references public.folders(id) on delete set null,
+  source text not null default 'web',
   created_at timestamptz not null default now()
 );
 
@@ -97,6 +98,49 @@ with check (auth.uid() = user_id);
 
 create policy "Users can update their report prefs"
 on public.report_preferences for update
+using (auth.uid() = user_id);
+
+create table if not exists public.user_api_tokens (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) on delete cascade,
+  token_hash text not null,
+  token_prefix text not null,
+  created_at timestamptz not null default now(),
+  revoked_at timestamptz,
+  last_used_at timestamptz
+);
+
+alter table public.user_api_tokens enable row level security;
+
+drop policy if exists "Users can read their api tokens" on public.user_api_tokens;
+drop policy if exists "Users can create their api tokens" on public.user_api_tokens;
+
+create policy "Users can read their api tokens"
+on public.user_api_tokens for select
+using (auth.uid() = user_id);
+
+create policy "Users can create their api tokens"
+on public.user_api_tokens for insert
+with check (auth.uid() = user_id);
+
+create table if not exists public.intake_requests (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) on delete cascade,
+  video_id text not null,
+  url text not null,
+  source text not null,
+  status text not null default 'queued',
+  error text,
+  clip_id uuid references public.mined_clips(id) on delete set null,
+  created_at timestamptz not null default now(),
+  processed_at timestamptz
+);
+
+alter table public.intake_requests enable row level security;
+
+drop policy if exists "Users can read their intake requests" on public.intake_requests;
+create policy "Users can read their intake requests"
+on public.intake_requests for select
 using (auth.uid() = user_id);
 ```
 

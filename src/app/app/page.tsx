@@ -77,6 +77,9 @@ export default function AppPage() {
   const [reportSaving, setReportSaving] = useState(false);
   const [reportStatus, setReportStatus] = useState<string | null>(null);
   const [reportSending, setReportSending] = useState(false);
+  const [shortcutToken, setShortcutToken] = useState<string | null>(null);
+  const [tokenStatus, setTokenStatus] = useState<string | null>(null);
+  const [tokenLoading, setTokenLoading] = useState(false);
 
   const transcriptText = useMemo(() => {
     if (!response) return "";
@@ -472,6 +475,43 @@ export default function AppPage() {
     }
   };
 
+  const handleGenerateShortcutToken = async () => {
+    if (!supabase) return;
+    setTokenLoading(true);
+    setTokenStatus(null);
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    if (!token) {
+      setTokenStatus("You must be signed in to generate a token.");
+      setTokenLoading(false);
+      return;
+    }
+    try {
+      const response = await fetch("/api/tokens", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload?.error || "Failed to generate token.");
+      }
+      setShortcutToken(payload.token);
+      setTokenStatus("Token generated. Add it to your iOS Shortcut.");
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to generate token.";
+      setTokenStatus(message);
+    } finally {
+      setTokenLoading(false);
+    }
+  };
+
+  const handleCopyToken = async () => {
+    if (!shortcutToken) return;
+    await navigator.clipboard.writeText(shortcutToken);
+    setTokenStatus("Token copied to clipboard.");
+  };
+
   const closeModal = () => {
     setSelectedClip(null);
     setShowFolderMenu(false);
@@ -581,6 +621,43 @@ export default function AppPage() {
         </form>
 
         {analysisError ? <p className={styles.error}>{analysisError}</p> : null}
+
+        <section className={styles.shortcutCard}>
+          <div>
+            <h2>One-Tap Mining (iOS)</h2>
+            <p className={styles.shortcutText}>
+              Share a YouTube Short and send it to Value Miner without leaving your
+              scroll. Generate a personal token once, then paste it into the iOS
+              Shortcut.
+            </p>
+          </div>
+          <div className={styles.shortcutActions}>
+            <button
+              className={styles.secondaryButton}
+              type="button"
+              onClick={handleGenerateShortcutToken}
+              disabled={tokenLoading}
+            >
+              {tokenLoading ? "Generating..." : "Generate token"}
+            </button>
+            {shortcutToken ? (
+              <button className={styles.primaryButton} type="button" onClick={handleCopyToken}>
+                Copy token
+              </button>
+            ) : null}
+          </div>
+          {shortcutToken ? (
+            <p className={styles.shortcutToken}>
+              Token: <span>{shortcutToken}</span>
+            </p>
+          ) : null}
+          {tokenStatus ? <p className={styles.shortcutStatus}>{tokenStatus}</p> : null}
+          <ol className={styles.shortcutSteps}>
+            <li>Install the Value Miner iOS Shortcut (Share Sheet).</li>
+            <li>Paste the token into the Shortcut when prompted.</li>
+            <li>Share a YouTube Short → Value Miner → Saved ✅</li>
+          </ol>
+        </section>
 
         <section className={styles.inventory}>
           <div className={styles.inventoryHeader}>
