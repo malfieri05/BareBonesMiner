@@ -185,8 +185,23 @@ export async function processIntakeRequest(params: {
   const videoId = extractVideoId(params.url);
   if (!videoId) throw new Error("Invalid YouTube URL.");
 
-  const transcriptText = await fetchTranscript(videoId);
-  const analysis = await analyzeTranscript(transcriptText);
+  let transcriptText = "";
+  let analysis: { analysis: string; actionPlan: string[]; category: string };
+  let transcriptError: string | null = null;
+
+  try {
+    transcriptText = await fetchTranscript(videoId);
+    analysis = await analyzeTranscript(transcriptText);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (message.includes("Transcript not available")) {
+      transcriptError = message;
+      transcriptText = "Transcript not available.";
+      analysis = { analysis: "Transcript not available.", actionPlan: [], category: "Other" };
+    } else {
+      throw new Error(message);
+    }
+  }
   const folderId = await resolveFolderId(params.userId, analysis.category);
 
   const { data: clip, error: clipError } = await supabaseServer
@@ -210,7 +225,12 @@ export async function processIntakeRequest(params: {
   if (params.intakeId) {
     await supabaseServer
       .from("intake_requests")
-      .update({ status: "complete", processed_at: new Date().toISOString(), clip_id: clip.id })
+      .update({
+        status: "complete",
+        error: transcriptError,
+        processed_at: new Date().toISOString(),
+        clip_id: clip.id,
+      })
       .eq("id", params.intakeId);
   }
 
