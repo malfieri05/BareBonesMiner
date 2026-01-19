@@ -118,8 +118,13 @@ export async function POST(request: Request) {
     console.info("[intake] success", { requestId, clipId: result.clipId });
     return NextResponse.json({ success: true, clipId: result.clipId });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Processing failed.";
-    console.error("[intake] processing failed", { requestId, message });
+    const message =
+      error instanceof Error
+        ? error.message
+        : typeof error === "string"
+        ? error
+        : JSON.stringify(error);
+    console.error("[intake] processing failed", { requestId, message, error });
     await supabaseServer
       .from("intake_requests")
       .update({ status: "error", error: message, processed_at: new Date().toISOString() })

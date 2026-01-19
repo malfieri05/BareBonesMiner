@@ -205,7 +205,7 @@ export async function processIntakeRequest(params: {
     .select("id")
     .single();
 
-  if (clipError) throw clipError;
+  if (clipError) throw new Error(clipError.message);
 
   if (params.intakeId) {
     await supabaseServer
