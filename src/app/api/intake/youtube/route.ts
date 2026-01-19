@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { extractVideoId, hashToken, processIntakeRequest } from "@/lib/intakeProcessor";
@@ -14,9 +15,12 @@ function pickUrl(value: unknown): string | null {
 }
 
 export async function POST(request: Request) {
+  const requestId = crypto.randomUUID();
+  console.info("[intake] start", { requestId });
   const authHeader = request.headers.get("authorization") || "";
   const rawToken = authHeader.replace("Bearer ", "");
   if (!rawToken) {
+    console.warn("[intake] missing token", { requestId });
     return NextResponse.json({ error: "Missing token." }, { status: 401 });
   }
 
@@ -28,6 +32,7 @@ export async function POST(request: Request) {
     .single();
 
   if (!tokenData || tokenData.revoked_at) {
+    console.warn("[intake] invalid token", { requestId, hasToken: !!tokenData });
     return NextResponse.json({ error: "Invalid token." }, { status: 401 });
   }
 
@@ -39,6 +44,7 @@ export async function POST(request: Request) {
     body = null;
   }
   if (!tokenData?.user_id) {
+    console.warn("[intake] missing user id", { requestId });
     return NextResponse.json({ error: "Invalid token." }, { status: 401 });
   }
   const urlValue =
@@ -46,12 +52,18 @@ export async function POST(request: Request) {
       ? body
       : pickUrl((body as { url?: unknown } | null)?.url ?? body);
   if (!urlValue || typeof urlValue !== "string") {
+    console.warn("[intake] missing url", {
+      requestId,
+      bodyType: typeof body,
+      rawBodyPreview: rawBody.slice(0, 200),
+    });
     return NextResponse.json({ error: "Missing url." }, { status: 400 });
   }
 
   const url = urlValue;
   const videoId = extractVideoId(url);
   if (!videoId) {
+    console.warn("[intake] invalid url", { requestId, url });
     return NextResponse.json({ error: "Invalid YouTube URL." }, { status: 400 });
   }
 
@@ -60,6 +72,7 @@ export async function POST(request: Request) {
       ? body.source
       : "ios_shortcut";
   const now = new Date().toISOString();
+  console.info("[intake] parsed", { requestId, videoId, source });
 
   const { data: existingClip } = await supabaseServer
     .from("mined_clips")
@@ -69,6 +82,7 @@ export async function POST(request: Request) {
     .limit(1);
 
   if (existingClip && existingClip.length > 0) {
+    console.info("[intake] duplicate", { requestId, videoId });
     return NextResponse.json({ success: true, duplicate: true });
   }
 
@@ -85,9 +99,12 @@ export async function POST(request: Request) {
     .select("id")
     .single();
 
-  const intakeId = intake?.id as string | undefined;
   if (intakeError) {
-    console.warn("Intake request insert failed:", intakeError.message);
+    console.error("[intake] intake insert failed", {
+      requestId,
+      message: intakeError.message,
+    });
+    return NextResponse.json({ error: intakeError.message }, { status: 500 });
   }
 
   try {
@@ -95,18 +112,18 @@ export async function POST(request: Request) {
       userId: tokenData.user_id,
       url,
       source,
-      intakeId,
+      intakeId: intake.id as string,
     });
 
+    console.info("[intake] success", { requestId, clipId: result.clipId });
     return NextResponse.json({ success: true, clipId: result.clipId });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Processing failed.";
-    if (intakeId) {
-      await supabaseServer
-        .from("intake_requests")
-        .update({ status: "error", error: message, processed_at: new Date().toISOString() })
-        .eq("id", intakeId);
-    }
+    console.error("[intake] processing failed", { requestId, message });
+    await supabaseServer
+      .from("intake_requests")
+      .update({ status: "error", error: message, processed_at: new Date().toISOString() })
+      .eq("id", intake.id);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
