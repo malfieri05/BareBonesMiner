@@ -131,12 +131,13 @@
   color: #d7c7ff;
   text-decoration: none;
   border-radius: 10px;
-  border: 1px solid transparent;
+  border: 2px solid rgba(124, 58, 237, 0.45);
   margin-bottom: 8px;
+  background: rgba(124, 58, 237, 0.12);
 }
 
 .menuItem:hover {
-  border-color: rgba(124, 58, 237, 0.4);
+  border-color: rgba(124, 58, 237, 0.6);
   background: rgba(124, 58, 237, 0.15);
 }
 
