@@ -45,7 +45,12 @@ export default function AuthClient({ mode }: AuthClientProps) {
       const redirectTo = redirectParam?.startsWith("/") ? redirectParam : "/app";
 
       if (activeMode === "signup") {
-        const { error } = await supabase.auth.signUp({ email, password });
+        const emailRedirectTo = `${window.location.origin}/auth/callback`;
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { emailRedirectTo },
+        });
         if (error) throw error;
         setStatus("Check your email to confirm your account.");
       } else {
