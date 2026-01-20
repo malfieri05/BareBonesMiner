@@ -80,6 +80,7 @@ export default function AppPage() {
   const [shortcutToken, setShortcutToken] = useState<string | null>(null);
   const [tokenStatus, setTokenStatus] = useState<string | null>(null);
   const [tokenLoading, setTokenLoading] = useState(false);
+  const shortcutInstallUrl = process.env.NEXT_PUBLIC_SHORTCUT_URL ?? "";
 
   const transcriptText = useMemo(() => {
     if (!response) return "";
@@ -496,7 +497,7 @@ export default function AppPage() {
         throw new Error(payload?.error || "Failed to generate token.");
       }
       setShortcutToken(payload.token);
-      setTokenStatus("Token generated. Add it to your iOS Shortcut.");
+      setTokenStatus("Token generated. Copy it now and add it to your iOS Shortcut.");
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Failed to generate token.";
@@ -638,12 +639,22 @@ export default function AppPage() {
               onClick={handleGenerateShortcutToken}
               disabled={tokenLoading}
             >
-              {tokenLoading ? "Generating..." : "Generate token"}
+              {tokenLoading ? "Generating..." : "Generate one-time token"}
             </button>
             {shortcutToken ? (
               <button className={styles.primaryButton} type="button" onClick={handleCopyToken}>
                 Copy token
               </button>
+            ) : null}
+            {shortcutInstallUrl ? (
+              <a
+                className={styles.primaryButton}
+                href={shortcutInstallUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Download Shortcut
+              </a>
             ) : null}
           </div>
           {shortcutToken ? (
@@ -654,7 +665,7 @@ export default function AppPage() {
           {tokenStatus ? <p className={styles.shortcutStatus}>{tokenStatus}</p> : null}
           <ol className={styles.shortcutSteps}>
             <li>Install the Value Miner iOS Shortcut (Share Sheet).</li>
-            <li>Paste the token into the Shortcut when prompted.</li>
+            <li>Generate a one-time token and paste it into the Shortcut.</li>
             <li>Share a YouTube Short → Value Miner → Saved ✅</li>
           </ol>
         </section>

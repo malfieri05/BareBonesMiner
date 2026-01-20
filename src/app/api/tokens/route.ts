@@ -16,15 +16,24 @@ export async function POST(request: Request) {
   }
 
   const userId = userData.user.id;
+  const { data: existingToken } = await supabaseServer
+    .from("user_api_tokens")
+    .select("id")
+    .eq("user_id", userId)
+    .is("revoked_at", null)
+    .limit(1)
+    .maybeSingle();
+
+  if (existingToken) {
+    return NextResponse.json(
+      { error: "Token already generated. Please reset it in settings if needed." },
+      { status: 409 }
+    );
+  }
+
   const rawToken = crypto.randomBytes(24).toString("hex");
   const tokenHash = hashToken(rawToken);
   const prefix = rawToken.slice(0, 6);
-
-  await supabaseServer
-    .from("user_api_tokens")
-    .update({ revoked_at: new Date().toISOString() })
-    .eq("user_id", userId)
-    .is("revoked_at", null);
 
   const { error } = await supabaseServer.from("user_api_tokens").insert({
     user_id: userId,

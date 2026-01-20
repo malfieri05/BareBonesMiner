@@ -9,6 +9,7 @@ SEARCHAPI_KEY=your_searchapi_key
 OPENAI_API_KEY=your_openai_key
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+NEXT_PUBLIC_SHORTCUT_URL=https://your-shortcut-link
 SUPABASE_URL=your_supabase_url
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 RESEND_API_KEY=your_resend_api_key
