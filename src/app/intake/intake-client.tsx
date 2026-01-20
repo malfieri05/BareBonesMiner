@@ -152,14 +152,16 @@ export default function IntakeClient() {
 
         if (cancelled) return;
         setStatus("done");
-        setMessage("Saved. Redirecting...");
+        setMessage("Saved ✅");
+        setTimeout(() => {
+          window.close();
+        }, 600);
         setTimeout(() => {
           router.replace("/app");
         }, 1200);
       } catch (error) {
         if (cancelled) return;
-        const message =
-          error instanceof Error ? error.message : "Something went wrong while saving the clip.";
+        const message = "Issue saving clip. Please try again in the app.";
         setStatus("error");
         setMessage(message);
       }
