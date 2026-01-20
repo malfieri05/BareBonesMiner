@@ -6,6 +6,44 @@ import { supabase } from "@/lib/supabaseClient";
 
 type IntakeStatus = "idle" | "working" | "done" | "error";
 
+const VIDEO_ID_REGEX = /^[a-zA-Z0-9_-]{11}$/;
+
+const extractVideoId = (input: string): string | null => {
+  const trimmed = input.trim();
+  if (!trimmed) return null;
+  if (VIDEO_ID_REGEX.test(trimmed)) return trimmed;
+
+  try {
+    const url = new URL(trimmed.startsWith("http") ? trimmed : `https://${trimmed}`);
+    const hostname = url.hostname.replace(/^www\./, "");
+
+    if (hostname === "youtu.be") {
+      const id = url.pathname.split("/").filter(Boolean)[0];
+      return VIDEO_ID_REGEX.test(id) ? id : null;
+    }
+
+    if (hostname.endsWith("youtube.com") || hostname.endsWith("youtube-nocookie.com")) {
+      const pathParts = url.pathname.split("/").filter(Boolean);
+      if (pathParts[0] === "shorts" && pathParts[1]) {
+        return VIDEO_ID_REGEX.test(pathParts[1]) ? pathParts[1] : null;
+      }
+      if (pathParts[0] === "watch") {
+        const id = url.searchParams.get("v") || "";
+        return VIDEO_ID_REGEX.test(id) ? id : null;
+      }
+      if (pathParts[0] === "embed" && pathParts[1]) {
+        return VIDEO_ID_REGEX.test(pathParts[1]) ? pathParts[1] : null;
+      }
+      const vParam = url.searchParams.get("v");
+      if (vParam && VIDEO_ID_REGEX.test(vParam)) return vParam;
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+};
+
 export default function IntakeClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -54,50 +92,54 @@ export default function IntakeClient() {
       }
 
       try {
-        const transcriptRes = await fetch("/api/transcript", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url: decodedUrl }),
-        });
+        let transcriptText = "";
+        let videoId = extractVideoId(decodedUrl) ?? "unknown";
+        let analysisData: { analysis?: string; actionPlan?: string[]; category?: string } = {};
 
-        if (!transcriptRes.ok) {
-          const text = await transcriptRes.text();
-          throw new Error(text || "Transcript request failed.");
+        try {
+          const transcriptRes = await fetch("/api/transcript", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url: decodedUrl }),
+          });
+
+          if (transcriptRes.ok) {
+            const transcriptData = (await transcriptRes.json()) as {
+              videoId?: string;
+              transcript?: Array<{ text: string }> | string;
+            };
+
+            videoId = transcriptData.videoId ?? videoId;
+            transcriptText = Array.isArray(transcriptData.transcript)
+              ? transcriptData.transcript.map((segment) => segment.text).join(" ")
+              : transcriptData.transcript ?? "";
+          }
+        } catch {
+          // fall back below
         }
 
-        const transcriptData = (await transcriptRes.json()) as {
-          videoId?: string;
-          transcript?: Array<{ text: string }> | string;
-        };
+        if (transcriptText) {
+          const analyzeRes = await fetch("/api/analyze", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ transcript: transcriptText }),
+          });
 
-        const transcriptText = Array.isArray(transcriptData.transcript)
-          ? transcriptData.transcript.map((segment) => segment.text).join(" ")
-          : transcriptData.transcript ?? "";
-
-        if (!transcriptText) {
-          throw new Error("Transcript not available.");
+          if (analyzeRes.ok) {
+            analysisData = (await analyzeRes.json()) as {
+              analysis?: string;
+              actionPlan?: string[];
+              category?: string;
+            };
+          }
+        } else {
+          transcriptText = "Transcript not available.";
+          analysisData = { analysis: "Transcript not available.", actionPlan: [], category: "Other" };
         }
-
-        const analyzeRes = await fetch("/api/analyze", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ transcript: transcriptText }),
-        });
-
-        if (!analyzeRes.ok) {
-          const text = await analyzeRes.text();
-          throw new Error(text || "Analysis request failed.");
-        }
-
-        const analysisData = (await analyzeRes.json()) as {
-          analysis?: string;
-          actionPlan?: string[];
-          category?: string;
-        };
 
         const { error } = await supabase.from("mined_clips").insert({
           user_id: user.id,
-          video_id: transcriptData.videoId ?? "unknown",
+          video_id: videoId,
           title: "Clip",
           transcript: transcriptText,
           analysis: analysisData.analysis ?? "",
