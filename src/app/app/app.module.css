@@ -126,7 +126,9 @@
 }
 
 .menuItem {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 8px 12px;
   color: #d7c7ff;
   text-decoration: none;
@@ -143,6 +145,7 @@
 
 .signOut {
   width: 100%;
+  text-align: center;
   background: transparent;
   border: 1px solid rgba(124, 58, 237, 0.4);
   color: rgba(215, 199, 255, 0.7);
