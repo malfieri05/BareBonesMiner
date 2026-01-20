@@ -1,0 +1,94 @@
+.page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 20px;
+  background: #0b0b15;
+  color: #f8f7ff;
+}
+
+.card {
+  width: min(720px, 100%);
+  background: rgba(17, 19, 28, 0.95);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  border-radius: 20px;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.back {
+  color: #c4b5fd;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.subhead {
+  color: rgba(226, 232, 240, 0.8);
+  line-height: 1.6;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.primary,
+.secondary {
+  border-radius: 999px;
+  padding: 10px 18px;
+  border: 1px solid rgba(124, 58, 237, 0.4);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.primary {
+  background: linear-gradient(135deg, #7c3aed, #a855f7);
+  color: #ffffff;
+}
+
+.secondary {
+  background: rgba(124, 58, 237, 0.18);
+  color: #e9d5ff;
+}
+
+.token {
+  background: rgba(124, 58, 237, 0.12);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
+  word-break: break-all;
+}
+
+.token span {
+  color: #d8b4fe;
+}
+
+.status {
+  color: #f5d0fe;
+  font-size: 13px;
+}
+
+.steps {
+  margin: 0;
+  padding-left: 18px;
+  color: rgba(226, 232, 240, 0.9);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.footerActions {
+  display: flex;
+  justify-content: flex-end;
+}
+

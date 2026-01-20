@@ -125,6 +125,21 @@
   z-index: 2;
 }
 
+.menuItem {
+  display: block;
+  padding: 8px 12px;
+  color: #d7c7ff;
+  text-decoration: none;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  margin-bottom: 8px;
+}
+
+.menuItem:hover {
+  border-color: rgba(124, 58, 237, 0.4);
+  background: rgba(124, 58, 237, 0.15);
+}
+
 .signOut {
   width: 100%;
   background: transparent;
