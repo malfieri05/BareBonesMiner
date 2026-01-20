@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import HomeRedirectClient from "./home-redirect-client";
 import styles from "./page.module.css";
@@ -26,7 +27,9 @@ const featureCards = [
 export default function Home() {
   return (
     <div className={styles.page}>
-      <HomeRedirectClient />
+      <Suspense fallback={null}>
+        <HomeRedirectClient />
+      </Suspense>
       <main className={styles.main}>
         <nav className={styles.nav}>
           <span className={styles.brand}>Value Miner</span>
