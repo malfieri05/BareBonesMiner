@@ -41,6 +41,9 @@ export default function AuthClient({ mode }: AuthClientProps) {
         return;
       }
 
+      const redirectParam = searchParams.get("redirect");
+      const redirectTo = redirectParam?.startsWith("/") ? redirectParam : "/app";
+
       if (activeMode === "signup") {
         const { error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
@@ -49,7 +52,7 @@ export default function AuthClient({ mode }: AuthClientProps) {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         setStatus("Signed in successfully. Redirecting...");
-        router.push("/app");
+        router.push(redirectTo);
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Something went wrong.";
