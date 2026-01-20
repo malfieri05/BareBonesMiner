@@ -155,6 +155,138 @@
   cursor: pointer;
 }
 
+.onboardingOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 8, 14, 0.75);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+  padding: 24px;
+}
+
+.onboardingModal {
+  width: min(720px, 100%);
+  background: rgba(17, 19, 28, 0.98);
+  border: 1px solid rgba(124, 58, 237, 0.35);
+  border-radius: 20px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  color: #f8f7ff;
+}
+
+.onboardingHeader h2 {
+  margin: 0 0 6px;
+}
+
+.onboardingHeader p {
+  margin: 0;
+  color: rgba(226, 232, 240, 0.8);
+}
+
+.onboardingSteps {
+  display: flex;
+  gap: 10px;
+}
+
+.onboardingStep {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: 1px solid rgba(124, 58, 237, 0.4);
+  background: rgba(124, 58, 237, 0.15);
+  color: #e9d5ff;
+  cursor: pointer;
+}
+
+.onboardingStepActive {
+  background: linear-gradient(135deg, #7c3aed, #a855f7);
+  border-color: rgba(124, 58, 237, 0.6);
+}
+
+.onboardingPanel {
+  border: 1px solid rgba(124, 58, 237, 0.25);
+  border-radius: 16px;
+  padding: 16px;
+  background: rgba(124, 58, 237, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.onboardingPanel h3 {
+  margin: 0;
+}
+
+.onboardingPanel p {
+  margin: 0;
+  color: rgba(226, 232, 240, 0.85);
+}
+
+.onboardingRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.onboardingPrimary,
+.onboardingSecondary {
+  border-radius: 999px;
+  padding: 10px 18px;
+  border: 1px solid rgba(124, 58, 237, 0.4);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.onboardingPrimary {
+  background: linear-gradient(135deg, #7c3aed, #a855f7);
+  color: #ffffff;
+}
+
+.onboardingSecondary {
+  background: rgba(124, 58, 237, 0.18);
+  color: #e9d5ff;
+}
+
+.onboardingToken {
+  font-size: 13px;
+  color: #d8b4fe;
+  word-break: break-all;
+}
+
+.onboardingMuted {
+  color: rgba(226, 232, 240, 0.7);
+  font-size: 13px;
+}
+
+.onboardingCheck {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  color: rgba(226, 232, 240, 0.85);
+}
+
+.onboardingStatus {
+  color: #f5d0fe;
+  font-size: 13px;
+}
+
+.onboardingActions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .form {
   background: var(--panel);
   border: 1px solid var(--panel-border);
