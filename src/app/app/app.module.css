@@ -144,9 +144,10 @@
   width: 100%;
   background: transparent;
   border: 1px solid rgba(124, 58, 237, 0.4);
-  color: #d7c7ff;
-  padding: 8px 12px;
+  color: rgba(215, 199, 255, 0.7);
+  padding: 6px 10px;
   border-radius: 10px;
+  font-size: 12px;
   cursor: pointer;
 }
 

@@ -78,6 +78,13 @@
   font-size: 13px;
 }
 
+.instructions {
+  border: 1px solid rgba(124, 58, 237, 0.25);
+  border-radius: 14px;
+  padding: 14px 16px;
+  background: rgba(124, 58, 237, 0.08);
+}
+
 .steps {
   margin: 0;
   padding-left: 18px;

@@ -98,11 +98,13 @@ export default function OneTapMiningClient() {
         ) : null}
         {tokenStatus ? <p className={styles.status}>{tokenStatus}</p> : null}
 
-        <ol className={styles.steps}>
-          {steps.map((step) => (
-            <li key={step}>{step}</li>
-          ))}
-        </ol>
+        <div className={styles.instructions}>
+          <ol className={styles.steps}>
+            {steps.map((step) => (
+              <li key={step}>{step}</li>
+            ))}
+          </ol>
+        </div>
 
         <div className={styles.footerActions}>
           <button className={styles.secondary} type="button" onClick={() => router.push("/app")}>
