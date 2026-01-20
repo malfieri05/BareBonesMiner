@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
@@ -20,6 +20,23 @@ export default function AuthClient({ mode }: AuthClientProps) {
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  useEffect(() => {
+    const confirmed = searchParams.get("confirmed");
+    const error = searchParams.get("error");
+    const errorDescription = searchParams.get("error_description");
+
+    if (confirmed) {
+      setStatus("Email confirmed. Please sign in.");
+      return;
+    }
+
+    if (error) {
+      const message = errorDescription
+        ? errorDescription.replace(/\+/g, " ")
+        : "Email link is invalid or expired. Please sign in again.";
+      setStatus(message);
+    }
+  }, [searchParams]);
 
   const title = useMemo(
     () => (activeMode === "signup" ? "Create your account" : "Welcome back"),
@@ -45,11 +62,14 @@ export default function AuthClient({ mode }: AuthClientProps) {
       const redirectTo = redirectParam?.startsWith("/") ? redirectParam : "/app";
 
       if (activeMode === "signup") {
-        const emailRedirectTo = `${window.location.origin}/auth/callback`;
+        const redirectUrl =
+          typeof window !== "undefined"
+            ? `${window.location.origin}/auth?mode=signin&confirmed=1`
+            : undefined;
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo },
+          options: redirectUrl ? { emailRedirectTo: redirectUrl } : undefined,
         });
         if (error) throw error;
         setStatus("Check your email to confirm your account.");
