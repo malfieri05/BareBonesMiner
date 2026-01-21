@@ -22,6 +22,59 @@ const featureCards = [
   },
 ];
 
+const featureIcons: Record<string, JSX.Element> = {
+  spark: (
+    <svg
+      className={styles.iconSvg}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path d="M12 2l1.8 4.7L18 8l-4.2 1.3L12 14l-1.8-4.7L6 8l4.2-1.3L12 2z" />
+      <path d="M19 14l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8.8-2z" />
+    </svg>
+  ),
+  checklist: (
+    <svg
+      className={styles.iconSvg}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path d="M4 6h9" />
+      <path d="M4 12h9" />
+      <path d="M4 18h9" />
+      <path d="M17 6l2 2 3-3" />
+      <path d="M17 12l2 2 3-3" />
+    </svg>
+  ),
+  folder: (
+    <svg
+      className={styles.iconSvg}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+    </svg>
+  ),
+};
+
 export default function Home() {
   return (
     <div className={styles.page}>
@@ -62,7 +115,7 @@ export default function Home() {
           {featureCards.map((card) => (
             <div key={card.title} className={styles.card}>
               <div className={styles.iconWrap} data-icon={card.icon} aria-hidden="true">
-                <span />
+                {featureIcons[card.icon]}
               </div>
               <h3>{card.title}</h3>
               <p>{card.description}</p>

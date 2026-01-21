@@ -174,12 +174,10 @@
   place-items: center;
 }
 
-.iconWrap span {
-  display: inline-block;
-  width: 16px;
-  height: 16px;
-  border-radius: 4px;
-  background: linear-gradient(135deg, #b794f4, #6d28d9);
+.iconSvg {
+  width: 18px;
+  height: 18px;
+  color: #d8b4fe;
 }
 
 .footer {
@@ -208,26 +206,32 @@
 
 @media (max-width: 768px) {
   .nav {
-    flex-direction: column;
-    gap: 12px;
+    flex-direction: row;
     align-items: center;
-    text-align: center;
+    justify-content: space-between;
+    gap: 12px;
   }
 
   .navActions {
-    width: 100%;
-    justify-content: center;
-    flex-wrap: wrap;
+    width: auto;
+    justify-content: flex-end;
+    flex-wrap: nowrap;
+    gap: 10px;
   }
 
   .linkButton,
   .navCta {
-    width: 100%;
-    justify-content: center;
+    width: auto;
+    padding: 6px 12px;
+    font-size: 13px;
   }
 
   .hero {
     padding-top: 48px;
+  }
+
+  .brand {
+    font-size: 14px;
   }
 }
 
