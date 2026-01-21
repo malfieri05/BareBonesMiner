@@ -84,6 +84,48 @@
   font-size: 13px;
 }
 
+.confirmation {
+  margin-top: 16px;
+  padding: 18px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.confirmationMessage {
+  font-size: 16px;
+  font-weight: 600;
+  color: #f5f7ff;
+  line-height: 1.4;
+}
+
+.retry {
+  border: none;
+  background: transparent;
+  color: #9aa4b6;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.retryBadge {
+  margin-left: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(168, 103, 255, 0.2);
+  border: 1px solid rgba(168, 103, 255, 0.45);
+  color: #e6d7ff;
+  font-size: 12px;
+  font-weight: 600;
+}
+
 .switch {
   font-size: 13px;
   color: #9aa4b6;

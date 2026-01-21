@@ -20,6 +20,7 @@ export default function AuthClient({ mode }: AuthClientProps) {
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [signupComplete, setSignupComplete] = useState(false);
 
   const title = useMemo(
     () => (activeMode === "signup" ? "Create your account" : "Welcome back"),
@@ -43,11 +44,21 @@ export default function AuthClient({ mode }: AuthClientProps) {
 
       const redirectParam = searchParams.get("redirect");
       const redirectTo = redirectParam?.startsWith("/") ? redirectParam : "/app";
+      const siteUrl =
+        process.env.NEXT_PUBLIC_SITE_URL ??
+        process.env.NEXT_PUBLIC_APP_URL ??
+        (typeof window !== "undefined" ? window.location.origin : "");
+      const emailRedirectTo = siteUrl ? `${siteUrl}${redirectTo}` : undefined;
 
       if (activeMode === "signup") {
-        const { error } = await supabase.auth.signUp({ email, password });
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: emailRedirectTo ? { emailRedirectTo } : undefined,
+        });
         if (error) throw error;
         setStatus("Check your email to confirm your account.");
+        setSignupComplete(true);
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
@@ -62,6 +73,8 @@ export default function AuthClient({ mode }: AuthClientProps) {
     }
   };
 
+  const showSignupConfirmation = activeMode === "signup" && signupComplete;
+
   return (
     <div className={styles.page}>
       <main className={styles.card}>
@@ -69,53 +82,77 @@ export default function AuthClient({ mode }: AuthClientProps) {
           ← Back to home
         </Link>
         <h1>{title}</h1>
-        <p className={styles.subhead}>
-          {mode === "signup"
-            ? "Start saving transcripts and action plans in one place."
-            : "Sign in to access your saved transcripts and insights."}
-        </p>
+        {!showSignupConfirmation ? (
+          <p className={styles.subhead}>
+            {mode === "signup"
+              ? "Start saving transcripts and action plans in one place."
+              : "Sign in to access your saved transcripts and insights."}
+          </p>
+        ) : null}
 
-        <form className={styles.form} onSubmit={handleSubmit}>
-          <label className={styles.label} htmlFor="email">
-            Email
-          </label>
-          <input
-            id="email"
-            type="email"
-            className={styles.input}
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            autoComplete="email"
-          />
-          <label className={styles.label} htmlFor="password">
-            Password
-          </label>
-          <input
-            id="password"
-            type="password"
-            className={styles.input}
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            autoComplete={mode === "signup" ? "new-password" : "current-password"}
-          />
+        {showSignupConfirmation ? (
+          <div className={styles.confirmation}>
+            <p className={styles.confirmationMessage}>
+              Check your email to confirm your account.
+            </p>
+            <button
+              className={styles.retry}
+              type="button"
+              onClick={() => {
+                setSignupComplete(false);
+                setStatus(null);
+                setEmail("");
+                setPassword("");
+              }}
+            >
+              Didn&apos;t receive link? <span className={styles.retryBadge}>Try Again</span>
+            </button>
+          </div>
+        ) : (
+          <>
+            <form className={styles.form} onSubmit={handleSubmit}>
+              <label className={styles.label} htmlFor="email">
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                className={styles.input}
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                autoComplete="email"
+              />
+              <label className={styles.label} htmlFor="password">
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                className={styles.input}
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                autoComplete={mode === "signup" ? "new-password" : "current-password"}
+              />
 
-          <button className={styles.primary} type="submit" disabled={loading}>
-            {loading ? "Working..." : activeMode === "signup" ? "Create account" : "Sign in"}
-          </button>
-          {status ? <p className={styles.status}>{status}</p> : null}
-        </form>
+              <button className={styles.primary} type="submit" disabled={loading}>
+                {loading ? "Working..." : activeMode === "signup" ? "Create account" : "Sign in"}
+              </button>
+              {status ? <p className={styles.status}>{status}</p> : null}
+            </form>
 
-        <div className={styles.switch}>
-          {activeMode === "signup" ? (
-            <>
-              Already have an account? <Link href="/auth?mode=signin">Sign in</Link>
-            </>
-          ) : (
-            <>
-              New here? <Link href="/auth?mode=signup">Create an account</Link>
-            </>
-          )}
-        </div>
+            <div className={styles.switch}>
+              {activeMode === "signup" ? (
+                <>
+                  Already have an account? <Link href="/auth?mode=signin">Sign in</Link>
+                </>
+              ) : (
+                <>
+                  New here? <Link href="/auth?mode=signup">Create an account</Link>
+                </>
+              )}
+            </div>
+          </>
+        )}
       </main>
     </div>
   );
