@@ -62,10 +62,10 @@ export default function AuthClient({ mode }: AuthClientProps) {
       const redirectTo = redirectParam?.startsWith("/") ? redirectParam : "/app";
 
       if (activeMode === "signup") {
-        const redirectUrl =
-          typeof window !== "undefined"
-            ? `${window.location.origin}/auth?mode=signin&confirmed=1`
-            : undefined;
+        const baseUrl =
+          process.env.NEXT_PUBLIC_SITE_URL ||
+          (typeof window !== "undefined" ? window.location.origin : "");
+        const redirectUrl = baseUrl ? `${baseUrl}/auth?mode=signin&confirmed=1` : undefined;
         const { error } = await supabase.auth.signUp({
           email,
           password,
