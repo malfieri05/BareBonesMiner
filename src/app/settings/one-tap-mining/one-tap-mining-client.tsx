@@ -12,9 +12,7 @@ export default function OneTapMiningClient() {
   const [tokenStatus, setTokenStatus] = useState<string | null>(null);
   const [tokenLoading, setTokenLoading] = useState(false);
   const shortcutInstallUrl = process.env.NEXT_PUBLIC_SHORTCUT_URL ?? "";
-  const shortcutDownloadUrl = shortcutToken
-    ? `/api/shortcut?token=${encodeURIComponent(shortcutToken)}`
-    : "";
+  const shortcutName = process.env.NEXT_PUBLIC_SHORTCUT_NAME ?? "Value Miner";
 
   const handleGenerateShortcutToken = async () => {
     if (!supabase) return;
@@ -37,7 +35,7 @@ export default function OneTapMiningClient() {
         throw new Error(payload?.error || "Failed to generate token.");
       }
       setShortcutToken(payload.token);
-      setTokenStatus("Token generated. Copy it now and add it to your iOS Shortcut.");
+      setTokenStatus("Token generated. Inject it into your iOS Shortcut next.");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to generate token.";
       setTokenStatus(message);
@@ -50,6 +48,15 @@ export default function OneTapMiningClient() {
     if (!shortcutToken) return;
     await navigator.clipboard.writeText(shortcutToken);
     setTokenStatus("Token copied to clipboard.");
+  };
+
+  const handleInjectToken = () => {
+    if (!shortcutToken) return;
+    const shortcutUrl = `shortcuts://run-shortcut?name=${encodeURIComponent(
+      shortcutName
+    )}&input=${encodeURIComponent(shortcutToken)}`;
+    setTokenStatus("Sending token to Shortcuts...");
+    window.location.href = shortcutUrl;
   };
 
   const steps = useMemo(
@@ -83,15 +90,15 @@ export default function OneTapMiningClient() {
             {tokenLoading ? "Generating..." : "Generate one-time token"}
           </button>
           {shortcutToken ? (
-            <button className={styles.primary} type="button" onClick={handleCopyToken}>
-              Copy token
+            <button className={styles.primary} type="button" onClick={handleInjectToken}>
+              Inject token into Shortcut
             </button>
           ) : null}
           {shortcutInstallUrl ? (
             shortcutToken ? (
               <a
                 className={styles.primary}
-                href={shortcutDownloadUrl}
+                href={shortcutInstallUrl}
                 target="_blank"
                 rel="noreferrer"
               >

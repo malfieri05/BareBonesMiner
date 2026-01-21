@@ -83,9 +83,7 @@ export default function AppPage() {
   const [onboardingStatus, setOnboardingStatus] = useState<string | null>(null);
   const [onboardingLoading, setOnboardingLoading] = useState(false);
   const shortcutInstallUrl = process.env.NEXT_PUBLIC_SHORTCUT_URL ?? "";
-  const shortcutDownloadUrl = onboardingToken
-    ? `/api/shortcut?token=${encodeURIComponent(onboardingToken)}`
-    : "";
+  const shortcutName = process.env.NEXT_PUBLIC_SHORTCUT_NAME ?? "Value Miner";
 
   const transcriptText = useMemo(() => {
     if (!response) return "";
@@ -265,10 +263,13 @@ export default function AppPage() {
     setOnboardingStatus("Token copied to clipboard.");
   };
 
-  const handlePrepareShortcut = async () => {
+  const handlePrepareShortcut = () => {
     if (!onboardingToken) return;
-    await navigator.clipboard.writeText(onboardingToken);
-    setOnboardingStatus("Token injected. Tap Download Shortcut for your custom install.");
+    const shortcutUrl = `shortcuts://run-shortcut?name=${encodeURIComponent(
+      shortcutName
+    )}&input=${encodeURIComponent(onboardingToken)}`;
+    setOnboardingStatus("Sending token to Shortcuts...");
+    window.location.href = shortcutUrl;
   };
 
   const handleCompleteOnboarding = async () => {
@@ -602,7 +603,7 @@ export default function AppPage() {
                     onboardingToken ? (
                       <a
                         className={styles.onboardingSecondary}
-                        href={shortcutDownloadUrl}
+                        href={shortcutInstallUrl}
                         target="_blank"
                         rel="noreferrer"
                       >
