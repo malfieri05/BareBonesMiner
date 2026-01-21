@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 import styles from "./app.module.css";
+import { OneTapMiningSetup } from "@/app/settings/one-tap-mining/one-tap-mining-client";
 
 type TranscriptSegment = {
   text: string;
@@ -79,8 +80,6 @@ export default function AppPage() {
   const [reportStatus, setReportStatus] = useState<string | null>(null);
   const [reportSending, setReportSending] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [onboardingStatus, setOnboardingStatus] = useState<string | null>(null);
-  const shortcutInstallUrl = process.env.NEXT_PUBLIC_SHORTCUT_URL ?? "";
 
   const transcriptText = useMemo(() => {
     if (!response) return "";
@@ -220,17 +219,12 @@ export default function AppPage() {
   const handleSignOut = async () => {
     if (!supabase) return;
     await supabase.auth.signOut();
-    try {
-      await fetch("/api/session", { method: "DELETE" });
-    } catch {
-      // Ignore cookie cleanup failures.
-    }
     router.replace("/");
   };
 
   const handleCompleteOnboarding = async () => {
     if (!supabase) return;
-    setOnboardingStatus(null);
+    setReportStatus(null);
     try {
       const { error } = await supabase.auth.updateUser({
         data: { onboarded: true },
@@ -240,7 +234,7 @@ export default function AppPage() {
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Failed to save onboarding state.";
-      setOnboardingStatus(message);
+      setReportStatus(message);
     }
   };
 
@@ -525,52 +519,13 @@ export default function AppPage() {
         {showOnboarding ? (
           <div className={styles.onboardingOverlay}>
             <div className={styles.onboardingModal}>
-              <div className={styles.onboardingHeader}>
-                <h2>Welcome to Value Miner</h2>
-                <p>Set up One-Tap Mining to save Shorts in seconds.</p>
-              </div>
-              <div className={styles.onboardingPanel}>
-                <h3>Connect your Shortcut</h3>
-                <p>
-                  Install the Value Miner Share Sheet shortcut. If you are logged in on Safari,
-                  your clips will save automatically.
-                </p>
-                <div className={styles.onboardingStack}>
-                  {shortcutInstallUrl ? (
-                    <a
-                      className={styles.onboardingPrimary}
-                      href={shortcutInstallUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      onClick={(event) => {
-                        event.preventDefault();
-                        const popup = window.open(shortcutInstallUrl, "_blank", "noopener,noreferrer");
-                        if (!popup) {
-                          window.location.href = shortcutInstallUrl;
-                        }
-                      }}
-                    >
-                      Download Shortcut
-                    </a>
-                  ) : (
-                    <p className={styles.onboardingMuted}>
-                      Shortcut link is not configured yet.
-                    </p>
-                  )}
-                </div>
-              </div>
-              {onboardingStatus ? (
-                <p className={styles.onboardingStatus}>{onboardingStatus}</p>
-              ) : null}
-              <div className={styles.onboardingActions}>
-                <button
-                  className={styles.onboardingPrimary}
-                  type="button"
-                  onClick={handleCompleteOnboarding}
-                >
-                  Finish setup
-                </button>
-              </div>
+              <OneTapMiningSetup
+                showBackLink={false}
+                showDoneButton={false}
+                showFinishButton
+                showResetButton={false}
+                onComplete={handleCompleteOnboarding}
+              />
             </div>
           </div>
         ) : null}

@@ -26,7 +26,7 @@ export async function POST(request: Request) {
 
   if (existingToken) {
     return NextResponse.json(
-      { error: "Token already generated. Please reset it in settings if needed." },
+      { error: "Token already generated. Please click 'Reset Token' at the bottom of page." },
       { status: 409 }
     );
   }
@@ -47,5 +47,31 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.json({ token: rawToken, prefix });
+}
+
+export async function DELETE(request: Request) {
+  const authHeader = request.headers.get("authorization") || "";
+  const token = authHeader.replace("Bearer ", "");
+  if (!token) {
+    return NextResponse.json({ error: "Missing auth token." }, { status: 401 });
+  }
+
+  const { data: userData, error: userError } = await supabaseServer.auth.getUser(token);
+  if (userError || !userData.user) {
+    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  }
+
+  const userId = userData.user.id;
+  const { error } = await supabaseServer
+    .from("user_api_tokens")
+    .update({ revoked_at: new Date().toISOString() })
+    .eq("user_id", userId)
+    .is("revoked_at", null);
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ ok: true });
 }
 

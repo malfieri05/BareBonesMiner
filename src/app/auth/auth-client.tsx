@@ -54,25 +54,17 @@ export default function AuthClient({ mode }: AuthClientProps) {
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: emailRedirectTo ? { emailRedirectTo } : undefined,
+          options: {
+            ...(emailRedirectTo ? { emailRedirectTo } : {}),
+            data: { onboarded: false },
+          },
         });
         if (error) throw error;
         setStatus("Check your email to confirm your account.");
         setSignupComplete(true);
       } else {
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        if (data.session?.refresh_token) {
-          try {
-            await fetch("/api/session", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ refreshToken: data.session.refresh_token }),
-            });
-          } catch {
-            // Ignore cookie failures; local session still works.
-          }
-        }
         setStatus("Signed in successfully. Redirecting...");
         router.push(redirectTo);
       }
