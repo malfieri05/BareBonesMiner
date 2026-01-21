@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.90.1",
+    "bplist-creator": "^0.1.0",
+    "bplist-parser": "^0.3.2",
     "next": "16.1.2",
     "react": "19.2.3",
     "react-dom": "19.2.3"

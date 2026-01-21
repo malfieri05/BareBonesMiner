@@ -79,13 +79,13 @@ export default function AppPage() {
   const [reportStatus, setReportStatus] = useState<string | null>(null);
   const [reportSending, setReportSending] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [onboardingStep, setOnboardingStep] = useState(0);
   const [onboardingToken, setOnboardingToken] = useState<string | null>(null);
   const [onboardingStatus, setOnboardingStatus] = useState<string | null>(null);
   const [onboardingLoading, setOnboardingLoading] = useState(false);
-  const [onboardingStep1Done, setOnboardingStep1Done] = useState(false);
-  const [onboardingStep3Done, setOnboardingStep3Done] = useState(false);
   const shortcutInstallUrl = process.env.NEXT_PUBLIC_SHORTCUT_URL ?? "";
+  const shortcutDownloadUrl = onboardingToken
+    ? `/api/shortcut?token=${encodeURIComponent(onboardingToken)}`
+    : "";
 
   const transcriptText = useMemo(() => {
     if (!response) return "";
@@ -263,6 +263,12 @@ export default function AppPage() {
     if (!onboardingToken) return;
     await navigator.clipboard.writeText(onboardingToken);
     setOnboardingStatus("Token copied to clipboard.");
+  };
+
+  const handlePrepareShortcut = async () => {
+    if (!onboardingToken) return;
+    await navigator.clipboard.writeText(onboardingToken);
+    setOnboardingStatus("Token injected. Tap Download Shortcut for your custom install.");
   };
 
   const handleCompleteOnboarding = async () => {
@@ -569,134 +575,70 @@ export default function AppPage() {
                 <h2>Welcome to Value Miner</h2>
                 <p>Set up One-Tap Mining to save Shorts in seconds.</p>
               </div>
-              <div className={styles.onboardingSteps}>
-                <button
-                  type="button"
-                  className={`${styles.onboardingStep} ${
-                    onboardingStep === 0 ? styles.onboardingStepActive : ""
-                  }`}
-                  onClick={() => setOnboardingStep(0)}
-                >
-                  1
-                </button>
-                <button
-                  type="button"
-                  className={`${styles.onboardingStep} ${
-                    onboardingStep === 1 ? styles.onboardingStepActive : ""
-                  }`}
-                  onClick={() => setOnboardingStep(1)}
-                >
-                  2
-                </button>
-                <button
-                  type="button"
-                  className={`${styles.onboardingStep} ${
-                    onboardingStep === 2 ? styles.onboardingStepActive : ""
-                  }`}
-                  onClick={() => setOnboardingStep(2)}
-                >
-                  3
-                </button>
-              </div>
-              {onboardingStep === 0 ? (
-                <div className={styles.onboardingPanel}>
-                  <h3>Download the Shortcut</h3>
-                  <p>Install the Value Miner Share Sheet shortcut on your iPhone.</p>
+              <div className={styles.onboardingPanel}>
+                <h3>Connect your Shortcut</h3>
+                <p>
+                  Follow these steps and we will handle the token for you so there is no copy/paste
+                  hassle.
+                </p>
+                <div className={styles.onboardingStack}>
+                  <button
+                    className={styles.onboardingSecondary}
+                    type="button"
+                    onClick={handleGenerateOnboardingToken}
+                    disabled={onboardingLoading}
+                  >
+                    {onboardingLoading ? "Generating..." : "Generate token"}
+                  </button>
+                  <button
+                    className={styles.onboardingPrimary}
+                    type="button"
+                    onClick={handlePrepareShortcut}
+                    disabled={!onboardingToken}
+                  >
+                    Inject token into Shortcut
+                  </button>
                   {shortcutInstallUrl ? (
-                    <a
-                      className={styles.onboardingPrimary}
-                      href={shortcutInstallUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      onClick={() => setOnboardingStep1Done(true)}
-                    >
-                      Download Shortcut
-                    </a>
+                    onboardingToken ? (
+                      <a
+                        className={styles.onboardingSecondary}
+                        href={shortcutDownloadUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Download Shortcut
+                      </a>
+                    ) : (
+                      <button
+                        className={`${styles.onboardingSecondary} ${styles.onboardingDisabled}`}
+                        type="button"
+                        disabled
+                      >
+                        Download Shortcut
+                      </button>
+                    )
                   ) : (
                     <p className={styles.onboardingMuted}>
                       Shortcut link is not configured yet.
                     </p>
                   )}
                 </div>
-              ) : null}
-              {onboardingStep === 1 ? (
-                <div className={styles.onboardingPanel}>
-                  <h3>Generate your one-time token</h3>
-                  <p>Copy this token and paste it into the Shortcut when prompted.</p>
-                  <div className={styles.onboardingRow}>
-                    <button
-                      className={styles.onboardingSecondary}
-                      type="button"
-                      onClick={handleGenerateOnboardingToken}
-                      disabled={onboardingLoading}
-                    >
-                      {onboardingLoading ? "Generating..." : "Generate token"}
-                    </button>
-                    {onboardingToken ? (
-                      <button
-                        className={styles.onboardingPrimary}
-                        type="button"
-                        onClick={handleCopyOnboardingToken}
-                      >
-                        Copy token
-                      </button>
-                    ) : null}
-                  </div>
-                  {onboardingToken ? (
-                    <p className={styles.onboardingToken}>Token: {onboardingToken}</p>
-                  ) : null}
-                </div>
-              ) : null}
-              {onboardingStep === 2 ? (
-                <div className={styles.onboardingPanel}>
-                  <h3>Paste + test</h3>
-                  <p>Paste the token into the Shortcut and send any Short to Value Miner.</p>
-                  <label className={styles.onboardingCheck}>
-                    <input
-                      type="checkbox"
-                      checked={onboardingStep3Done}
-                      onChange={(event) => setOnboardingStep3Done(event.target.checked)}
-                    />
-                    I pasted the token and tested the shortcut.
-                  </label>
-                </div>
-              ) : null}
+                {onboardingToken ? (
+                  <p className={styles.onboardingToken}>Token: {onboardingToken}</p>
+                ) : null}
+              </div>
               {onboardingStatus ? (
                 <p className={styles.onboardingStatus}>{onboardingStatus}</p>
               ) : null}
               <div className={styles.onboardingActions}>
-                {onboardingStep > 0 ? (
-                  <button
-                    className={styles.onboardingSecondary}
-                    type="button"
-                    onClick={() => setOnboardingStep((value) => Math.max(0, value - 1))}
-                  >
-                    Back
-                  </button>
-                ) : (
-                  <span />
-                )}
-                {onboardingStep < 2 ? (
-                  <button
-                    className={styles.onboardingPrimary}
-                    type="button"
-                    onClick={() => setOnboardingStep((value) => Math.min(2, value + 1))}
-                    disabled={
-                      onboardingStep === 0 && Boolean(shortcutInstallUrl) && !onboardingStep1Done
-                    }
-                  >
-                    Next
-                  </button>
-                ) : (
-                  <button
-                    className={styles.onboardingPrimary}
-                    type="button"
-                    onClick={handleCompleteOnboarding}
-                    disabled={!onboardingStep3Done || onboardingLoading}
-                  >
-                    Finish setup
-                  </button>
-                )}
+                <button
+                  className={styles.onboardingPrimary}
+                  type="button"
+                  onClick={handleCompleteOnboarding}
+                  disabled={!onboardingToken || onboardingLoading}
+                >
+                  Finish setup
+                </button>
               </div>
             </div>
           </div>

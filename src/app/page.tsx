@@ -79,7 +79,7 @@ const featureIcons: Record<string, ReactElement> = {
 export default function Home() {
   return (
     <div className={styles.page}>
-      <main className={styles.main}>
+      <header className={styles.header}>
         <nav className={styles.nav}>
           <span className={styles.brand}>Value Miner</span>
           <div className={styles.navActions}>
@@ -91,6 +91,9 @@ export default function Home() {
             </Link>
           </div>
         </nav>
+      </header>
+
+      <main className={styles.main}>
 
         <section className={styles.hero}>
           <p className={styles.heroEyebrow}>Value Miner</p>

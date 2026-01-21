@@ -12,6 +12,9 @@ export default function OneTapMiningClient() {
   const [tokenStatus, setTokenStatus] = useState<string | null>(null);
   const [tokenLoading, setTokenLoading] = useState(false);
   const shortcutInstallUrl = process.env.NEXT_PUBLIC_SHORTCUT_URL ?? "";
+  const shortcutDownloadUrl = shortcutToken
+    ? `/api/shortcut?token=${encodeURIComponent(shortcutToken)}`
+    : "";
 
   const handleGenerateShortcutToken = async () => {
     if (!supabase) return;
@@ -85,9 +88,16 @@ export default function OneTapMiningClient() {
             </button>
           ) : null}
           {shortcutInstallUrl ? (
-            <a className={styles.primary} href={shortcutInstallUrl} target="_blank" rel="noreferrer">
-              Download Shortcut
-            </a>
+            shortcutToken ? (
+              <a
+                className={styles.primary}
+                href={shortcutDownloadUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Download Shortcut
+              </a>
+            ) : null
           ) : null}
         </div>
 

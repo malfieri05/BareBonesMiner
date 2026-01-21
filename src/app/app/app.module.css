@@ -233,6 +233,12 @@
   gap: 10px;
 }
 
+.onboardingStack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .onboardingPrimary,
 .onboardingSecondary {
   border-radius: 999px;
@@ -246,6 +252,16 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
+}
+
+.onboardingStack .onboardingPrimary,
+.onboardingStack .onboardingSecondary {
+  width: 100%;
+}
+
+.onboardingDisabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .onboardingPrimary {
