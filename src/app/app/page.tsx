@@ -521,10 +521,10 @@ export default function AppPage() {
             <div className={styles.onboardingModal}>
               <OneTapMiningSetup
                 showBackLink={false}
-                showDoneButton={false}
-                showFinishButton
+                showDoneButton
+                showFinishButton={false}
                 showResetButton={false}
-                onComplete={handleCompleteOnboarding}
+                onDone={handleCompleteOnboarding}
               />
             </div>
           </div>
