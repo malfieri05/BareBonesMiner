@@ -967,3 +967,129 @@
   }
 }
 
+@media (max-width: 720px) {
+  .page {
+    padding: 28px 16px 60px;
+  }
+
+  .main {
+    gap: 24px;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+
+  .title {
+    font-size: 28px;
+    text-align: center;
+  }
+
+  .subhead {
+    max-width: 100%;
+    text-align: center;
+  }
+
+  .userInfo {
+    align-self: center;
+  }
+
+  .onboardingModal {
+    padding: 20px;
+  }
+
+  .onboardingActions {
+    flex-direction: column;
+    gap: 10px;
+    align-items: stretch;
+  }
+
+  .onboardingPrimary,
+  .onboardingSecondary {
+    width: 100%;
+  }
+
+  .form {
+    padding: 20px;
+  }
+
+  .input {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .primaryButton {
+    width: 100%;
+  }
+
+  .results {
+    padding: 20px;
+  }
+
+  .transcript {
+    max-height: 280px;
+  }
+
+  .createFolder {
+    flex-direction: column;
+  }
+
+  .createFolder input {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .createFolder button {
+    width: 100%;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .modal {
+    padding: 20px;
+  }
+
+  .modalHeader {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .modalActions {
+    justify-content: flex-end;
+  }
+
+  .reportOptions {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .modalFooter {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .secondaryButton,
+  .primaryButton {
+    width: 100%;
+  }
+
+  .reportStatus {
+    text-align: left;
+  }
+
+  .shortcutActions {
+    flex-direction: column;
+  }
+
+  .shortcutActions a,
+  .shortcutActions button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+

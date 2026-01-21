@@ -99,3 +99,28 @@
   justify-content: flex-end;
 }
 
+@media (max-width: 600px) {
+  .page {
+    padding: 24px 16px;
+  }
+
+  .card {
+    padding: 24px;
+  }
+
+  .actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .primary,
+  .secondary {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .footerActions {
+    justify-content: center;
+  }
+}
+

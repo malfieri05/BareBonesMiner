@@ -206,6 +206,31 @@
   }
 }
 
+@media (max-width: 768px) {
+  .nav {
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+    text-align: center;
+  }
+
+  .navActions {
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .linkButton,
+  .navCta {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .hero {
+    padding-top: 48px;
+  }
+}
+
 @media (max-width: 600px) {
   .main {
     padding: 24px 20px 60px;
@@ -213,5 +238,17 @@
 
   .hero {
     padding-top: 40px;
+  }
+
+  .hero h1 {
+    font-size: clamp(2.1rem, 7vw, 2.8rem);
+  }
+
+  .heroSubhead {
+    font-size: 15px;
+  }
+
+  .card {
+    padding: 20px;
   }
 }
