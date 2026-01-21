@@ -85,6 +85,10 @@ export async function POST(request: Request) {
       : "ios_shortcut";
   const now = new Date().toISOString();
 
+  if (!userId) {
+    return response;
+  }
+
   const { data: existingClip } = await supabaseServer
     .from("mined_clips")
     .select("id")
