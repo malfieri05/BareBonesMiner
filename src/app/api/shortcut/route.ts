@@ -64,7 +64,7 @@ export async function GET(request: Request) {
     const placeholderRaw = process.env.SHORTCUT_TOKEN_PLACEHOLDER ?? defaultPlaceholder;
     const placeholders = [placeholderRaw, `(${placeholderRaw})`];
     const updatedShortcut = replaceTokens(parsedShortcut, token, placeholders);
-    const outputBuffer = Buffer.from(bplistCreator(updatedShortcut));
+    const outputBuffer = Buffer.from(bplistCreator(updatedShortcut as Record<string, unknown>));
 
     return new NextResponse(outputBuffer, {
       headers: {
