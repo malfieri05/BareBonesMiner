@@ -79,11 +79,8 @@ export default function AppPage() {
   const [reportStatus, setReportStatus] = useState<string | null>(null);
   const [reportSending, setReportSending] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [onboardingToken, setOnboardingToken] = useState<string | null>(null);
   const [onboardingStatus, setOnboardingStatus] = useState<string | null>(null);
-  const [onboardingLoading, setOnboardingLoading] = useState(false);
   const shortcutInstallUrl = process.env.NEXT_PUBLIC_SHORTCUT_URL ?? "";
-  const shortcutName = process.env.NEXT_PUBLIC_SHORTCUT_NAME ?? "Value Miner";
 
   const transcriptText = useMemo(() => {
     if (!response) return "";
@@ -223,58 +220,16 @@ export default function AppPage() {
   const handleSignOut = async () => {
     if (!supabase) return;
     await supabase.auth.signOut();
-    router.replace("/");
-  };
-
-  const handleGenerateOnboardingToken = async () => {
-    if (!supabase) return;
-    setOnboardingLoading(true);
-    setOnboardingStatus(null);
-    const { data } = await supabase.auth.getSession();
-    const token = data.session?.access_token;
-    if (!token) {
-      setOnboardingStatus("You must be signed in to generate a token.");
-      setOnboardingLoading(false);
-      return;
-    }
     try {
-      const response = await fetch("/api/tokens", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const payload = await response.json();
-      if (!response.ok) {
-        throw new Error(payload?.error || "Failed to generate token.");
-      }
-      setOnboardingToken(payload.token);
-      setOnboardingStatus("Token generated. Copy it now and add it to your Shortcut.");
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Failed to generate token.";
-      setOnboardingStatus(message);
-    } finally {
-      setOnboardingLoading(false);
+      await fetch("/api/session", { method: "DELETE" });
+    } catch {
+      // Ignore cookie cleanup failures.
     }
-  };
-
-  const handleCopyOnboardingToken = async () => {
-    if (!onboardingToken) return;
-    await navigator.clipboard.writeText(onboardingToken);
-    setOnboardingStatus("Token copied to clipboard.");
-  };
-
-  const handlePrepareShortcut = () => {
-    if (!onboardingToken) return;
-    const shortcutUrl = `shortcuts://run-shortcut?name=${encodeURIComponent(
-      shortcutName
-    )}&input=${encodeURIComponent(onboardingToken)}`;
-    setOnboardingStatus("Sending token to Shortcuts...");
-    window.location.href = shortcutUrl;
+    router.replace("/");
   };
 
   const handleCompleteOnboarding = async () => {
     if (!supabase) return;
-    setOnboardingLoading(true);
     setOnboardingStatus(null);
     try {
       const { error } = await supabase.auth.updateUser({
@@ -286,8 +241,6 @@ export default function AppPage() {
       const message =
         error instanceof Error ? error.message : "Failed to save onboarding state.";
       setOnboardingStatus(message);
-    } finally {
-      setOnboardingLoading(false);
     }
   };
 
@@ -579,54 +532,32 @@ export default function AppPage() {
               <div className={styles.onboardingPanel}>
                 <h3>Connect your Shortcut</h3>
                 <p>
-                  Follow these steps and we will handle the token for you so there is no copy/paste
-                  hassle.
+                  Install the Value Miner Share Sheet shortcut. If you are logged in on Safari,
+                  your clips will save automatically.
                 </p>
                 <div className={styles.onboardingStack}>
-                  <button
-                    className={styles.onboardingSecondary}
-                    type="button"
-                    onClick={handleGenerateOnboardingToken}
-                    disabled={onboardingLoading}
-                  >
-                    {onboardingLoading ? "Generating..." : "Generate token"}
-                  </button>
-                  <button
-                    className={styles.onboardingPrimary}
-                    type="button"
-                    onClick={handlePrepareShortcut}
-                    disabled={!onboardingToken}
-                  >
-                    Inject token into Shortcut
-                  </button>
                   {shortcutInstallUrl ? (
-                    onboardingToken ? (
-                      <a
-                        className={styles.onboardingSecondary}
-                        href={shortcutInstallUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        Download Shortcut
-                      </a>
-                    ) : (
-                      <button
-                        className={`${styles.onboardingSecondary} ${styles.onboardingDisabled}`}
-                        type="button"
-                        disabled
-                      >
-                        Download Shortcut
-                      </button>
-                    )
+                    <a
+                      className={styles.onboardingPrimary}
+                      href={shortcutInstallUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        const popup = window.open(shortcutInstallUrl, "_blank", "noopener,noreferrer");
+                        if (!popup) {
+                          window.location.href = shortcutInstallUrl;
+                        }
+                      }}
+                    >
+                      Download Shortcut
+                    </a>
                   ) : (
                     <p className={styles.onboardingMuted}>
                       Shortcut link is not configured yet.
                     </p>
                   )}
                 </div>
-                {onboardingToken ? (
-                  <p className={styles.onboardingToken}>Token: {onboardingToken}</p>
-                ) : null}
               </div>
               {onboardingStatus ? (
                 <p className={styles.onboardingStatus}>{onboardingStatus}</p>
@@ -636,7 +567,6 @@ export default function AppPage() {
                   className={styles.onboardingPrimary}
                   type="button"
                   onClick={handleCompleteOnboarding}
-                  disabled={!onboardingToken || onboardingLoading}
                 >
                   Finish setup
                 </button>

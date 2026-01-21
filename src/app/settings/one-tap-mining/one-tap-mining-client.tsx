@@ -101,6 +101,13 @@ export default function OneTapMiningClient() {
                 href={shortcutInstallUrl}
                 target="_blank"
                 rel="noreferrer"
+                onClick={(event) => {
+                  event.preventDefault();
+                  const popup = window.open(shortcutInstallUrl, "_blank", "noopener,noreferrer");
+                  if (!popup) {
+                    window.location.href = shortcutInstallUrl;
+                  }
+                }}
               >
                 Download Shortcut
               </a>
