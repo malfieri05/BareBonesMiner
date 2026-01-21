@@ -1,3 +1,4 @@
+import type { ReactElement } from "react";
 import Link from "next/link";
 import styles from "./page.module.css";
 
@@ -22,7 +23,7 @@ const featureCards = [
   },
 ];
 
-const featureIcons: Record<string, JSX.Element> = {
+const featureIcons: Record<string, ReactElement> = {
   spark: (
     <svg
       className={styles.iconSvg}
