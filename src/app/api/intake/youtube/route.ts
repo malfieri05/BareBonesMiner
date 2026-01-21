@@ -16,7 +16,7 @@ function pickUrl(value: unknown): string | null {
 
 export async function POST(request: Request) {
   const response = new NextResponse(null, { status: 204 });
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const refreshToken = cookieStore.get("vm_refresh_token")?.value ?? "";
   let userId: string | null = null;
 
