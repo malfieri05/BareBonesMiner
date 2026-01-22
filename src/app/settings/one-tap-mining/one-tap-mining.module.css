@@ -291,7 +291,15 @@
   }
 
   .card {
-    padding: 24px;
+    padding: 22px;
+  }
+
+  .card h1 {
+    font-size: 22px;
+  }
+
+  .subhead {
+    font-size: 14px;
   }
 
   .actions {
@@ -307,6 +315,7 @@
 
   .tokenSection {
     grid-template-columns: 1fr;
+    padding: 14px;
   }
 
   .stepArrow {
@@ -316,6 +325,21 @@
   .copyButton,
   .generateButton {
     justify-self: stretch;
+  }
+
+  .primary,
+  .secondary {
+    font-size: 13px;
+    padding: 9px 14px;
+  }
+
+  .tokenBox {
+    padding: 10px 12px;
+  }
+
+  .mediaImage {
+    max-height: 320px;
+    object-fit: contain;
   }
 
   .copyMessage {

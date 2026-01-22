@@ -181,6 +181,19 @@
   overflow: auto;
 }
 
+@media (max-width: 600px) {
+  .onboardingOverlay {
+    padding: 16px;
+  }
+
+  .onboardingModal {
+    width: 100%;
+    padding: 20px;
+    border-radius: 16px;
+    max-height: 90vh;
+  }
+}
+
 .onboardingHeader h2 {
   margin: 0 0 6px;
 }
