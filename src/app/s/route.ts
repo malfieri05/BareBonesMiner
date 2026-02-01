@@ -2,6 +2,13 @@ import type { NextRequest } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
+type OpenGraphData = {
+  ogTitle?: string;
+  ogImage?: string;
+  twitterTitle?: string;
+  twitterImage?: string;
+};
+
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const rawTarget = requestUrl.searchParams.get('u');
@@ -22,7 +29,9 @@ export async function GET(request: NextRequest) {
     return new Response('Unsupported URL protocol.', { status: 400 });
   }
 
-  const ogData = await fetchOpenGraph(targetUrl.toString()).catch(() => ({}));
+  const ogData: OpenGraphData = await fetchOpenGraph(targetUrl.toString()).catch(
+    () => ({})
+  );
   const ogTitle = ogData.ogTitle || ogData.twitterTitle || '';
   const ogImage = ogData.ogImage || ogData.twitterImage || '';
 
