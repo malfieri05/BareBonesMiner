@@ -29,9 +29,12 @@ export async function GET(request: NextRequest) {
     return new Response('Unsupported URL protocol.', { status: 400 });
   }
 
-  const ogData: OpenGraphData = await fetchOpenGraph(targetUrl.toString()).catch(
-    () => ({})
-  );
+  let ogData: OpenGraphData = {};
+  try {
+    ogData = await fetchOpenGraph(targetUrl.toString());
+  } catch {
+    ogData = {};
+  }
   const ogTitle = ogData.ogTitle || ogData.twitterTitle || '';
   const ogImage = ogData.ogImage || ogData.twitterImage || '';
 
